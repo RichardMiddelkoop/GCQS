@@ -1,17 +1,24 @@
+######
+# TODO: np.around(chromosome_state_vector,3) 
+######
+
 # shell Genetic Algorithm
-# Based on https://www.geeksforgeeks.org/genetic-algorithms/
+# Based on the structure of https://www.geeksforgeeks.org/genetic-algorithms/
 
 import random
+import cirq
+import numpy as np
   
 # number of individuals in each generation
-POPULATION_SIZE = 100
+POPULATION_SIZE = 10
   
 # valid genes of the chromosome
+## TODO: replace with all tested and allowed circuit items.
 GENES = '''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP
 QRSTUVWXYZ 1234567890, .-;:_!"#%&/()=?@${[]}'''
 
-# target string to be generated
-TARGET = "GeneticAlgorithm"
+# target state vector to be generated
+TARGET = [0,0]
   
 class Individual(object):
     '''
@@ -34,12 +41,12 @@ class Individual(object):
     @classmethod
     def create_gnome(self):
         '''
-        TODO: Implement an initial Cirq system as a choromosome
+        TODO: Implement an initial Cirq system as a chromosome
         create chromosome or string of genes
         '''
         global TARGET
-        gnome_len = len(TARGET)
-        return [self.mutated_genes() for _ in range(gnome_len)]
+        gnome_qubit_len = int(np.shape(TARGET)[0]/2)
+        return [cirq.GridQubit(i, 0) for i in range(gnome_qubit_len)]
     
     def mate(self, par2):
         '''
@@ -72,18 +79,22 @@ class Individual(object):
         # create new Individual(offspring) using 
         # generated chromosome for offspring
         return Individual(child_chromosome)
-  
+    
+    ### The current fitness calculation is very simple 
+    # real_score = (1-abs(target_value_real-individual_value_real))^2
+    # imaginary_score = (1-abs(target_value_imaginary-individual_value_imaginary))^2
+    # fitness_value = real_score + imaginary_score
     def cal_fitness(self):
         '''
         TODO: Estime energy level of the given quantum circuit
-        Calculate fitness score, it is the number of
-        characters in string which differ from target
-        string.
+        TODO: Difference between TARGET and chromosome
+        Calculate fitness score, it is the penalites difference between the target state vector 
+        and the actual state vector.
         '''
         global TARGET
         fitness = 0
-        for gs, gt in zip(self.chromosome, TARGET):
-            if gs != gt: fitness+= 1
+        for gene_self, gene_target in zip(self.chromosome, TARGET):
+            fitness += 1-abs(gene_self.real-gene_target.real)^2+1-abs(gene_self.imag-gene_target.imag)^2
         return fitness
   
 def main():
