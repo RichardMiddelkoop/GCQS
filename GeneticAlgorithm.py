@@ -1,4 +1,5 @@
 ######
+# TODO: add the mutation possibility of creating an additional moment
 # TODO: add possibility for ancillairy bits
 # TODO: implement PowGates and variable rotation gates
 ######
@@ -54,7 +55,7 @@ class Individual(object):
             return gene(cirq.LineQubit(q0),cirq.LineQubit(q1))
         else:
             q0 = random.sample(range(0, gnome_qubit_len), 1)
-            return gene(cirq.LineQubit(q0))
+            return gene(cirq.LineQubit(q0[0]))
   
     @classmethod
     def create_gnome(self):
