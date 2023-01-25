@@ -1,5 +1,5 @@
 ######
-# TODO: np.around(chromosome_state_vector,3) 
+# TODO: add possibility for ancillairy bits
 ######
 
 # shell Genetic Algorithm
@@ -14,8 +14,9 @@ POPULATION_SIZE = 10
   
 # valid genes of the chromosome
 ## TODO: replace with all tested and allowed circuit items.
-GENES = '''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP
-QRSTUVWXYZ 1234567890, .-;:_!"#%&/()=?@${[]}'''
+GENES_1 = [cirq.X,cirq.Y,cirq.Z,cirq.H,cirq.S,cirq.T]
+GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
+GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
 TARGET = [0,0]
@@ -34,29 +35,45 @@ class Individual(object):
         TODO: Implement an mutation for Cirq system
         create random genes for mutation
         '''
-        global GENES
+        global GENES_1,GENES_2,GENES_3
+        gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
+        if gnome_qubit_len > 2:
+            GENES = GENES_1 + GENES_2 + GENES_3
+        elif gnome_qubit_len > 1:
+            GENES = GENES_1 + GENES_2
+        else:
+            GENES = GENES_1
+        
         gene = random.choice(GENES)
-        return gene
+        if gene in GENES_3:
+            return gene(random.sample(range(0, gnome_qubit_len), 3))
+        elif gene in GENES_2:
+            return gene(random.sample(range(0, gnome_qubit_len), 2))
+        else:
+            return gene(random.sample(range(0, gnome_qubit_len), 1))
   
     @classmethod
     def create_gnome(self):
         '''
-        TODO: Implement an initial Cirq system as a chromosome
-        create chromosome or string of genes
+        create chromosome as a string of qubitgenes in superpostion
         '''
         global TARGET
-        gnome_qubit_len = int(np.shape(TARGET)[0]/2)
-        return [cirq.GridQubit(i, 0) for i in range(gnome_qubit_len)]
+        gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
+        return cirq.Circuit(cirq.H(qubit) for qubit in cirq.LineQubit.range(gnome_qubit_len))
     
-    def mate(self, par2):
+    def mate(self, parent2):
         '''
         TODO: Decide if Elitism is also a solid choice for the Thesis
         Perform mating and produce new offspring
         '''
   
         # chromosome for offspring
-        child_chromosome = []
-        for gp1, gp2 in zip(self.chromosome, par2.chromosome):    
+        child_chromosome = cirq.Circuit()
+
+        # Seperate both parents in moments
+        ## Moments are a collection of Operations taht all act during the same abstract time slice.
+        ## Note that if the systems aren't of identical length only the matching section are considered.
+        for gene_parent_1, gene_parent_2 in zip(self.chromosome, parent2.chromosome):    
   
             # random probability  
             prob = random.random()
@@ -64,12 +81,12 @@ class Individual(object):
             # if prob is less than 0.45, insert gene
             # from parent 1 
             if prob < 0.45:
-                child_chromosome.append(gp1)
+                child_chromosome.append(gene_parent_1)
   
             # if prob is between 0.45 and 0.90, insert
             # gene from parent 2
             elif prob < 0.90:
-                child_chromosome.append(gp2)
+                child_chromosome.append(gene_parent_2)
   
             # otherwise insert random gene(mutate), 
             # for maintaining diversity
@@ -87,14 +104,14 @@ class Individual(object):
     def cal_fitness(self):
         '''
         TODO: Estime energy level of the given quantum circuit
-        TODO: Difference between TARGET and chromosome
         Calculate fitness score, it is the penalites difference between the target state vector 
         and the actual state vector.
         '''
         global TARGET
         fitness = 0
-        for gene_self, gene_target in zip(self.chromosome, TARGET):
-            fitness += 1-abs(gene_self.real-gene_target.real)^2+1-abs(gene_self.imag-gene_target.imag)^2
+        chromosome_state_vector = cirq.Simulator.simulate(self.chromosome)
+        for gene_self, gene_target in zip(chromosome_state_vector, TARGET):
+            fitness += (1-abs(gene_self.real-gene_target.real))^2+(1-abs(gene_self.imag-gene_target.imag))^2
         return fitness
   
 def main():

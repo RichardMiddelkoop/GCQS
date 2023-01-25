@@ -30,7 +30,15 @@ def mutated_genes(i):
     return cirq.GridQubit(i, 0)
 
 
-TARGET = [0,0]
-gnome_qubit_len = int(np.shape(TARGET)[0]/2)
+TARGET = [0,0.5,0,1]
+GENES_1 = [cirq.X,cirq.Y,cirq.Z,cirq.H,cirq.S,cirq.T]
+GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
+GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
+gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
 print(gnome_qubit_len)
-# print([mutated_genes(i) for i in range(gnome_len)])
+
+# print(cirq.Circuit(GENES_1[0](qubit) for qubit in cirq.LineQubit.range(gnome_qubit_len)))
+import random
+print(GENES_1+GENES_2)
+print(random.choice(GENES_1+GENES_2))
+print(random.randrange(3))
