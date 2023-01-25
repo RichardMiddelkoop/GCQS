@@ -1,5 +1,6 @@
 ######
 # TODO: add possibility for ancillairy bits
+# TODO: implement PowGates and variable rotation gates
 ######
 
 # shell Genetic Algorithm
@@ -10,16 +11,16 @@ import cirq
 import numpy as np
   
 # number of individuals in each generation
-POPULATION_SIZE = 10
+POPULATION_SIZE = 100
   
 # valid genes of the chromosome
 ## TODO: replace with all tested and allowed circuit items.
-GENES_1 = [cirq.X,cirq.Y,cirq.Z,cirq.H,cirq.S,cirq.T]
+GENES_1 = [cirq.I,cirq.X,cirq.Y,cirq.Z,cirq.H,cirq.S,cirq.T]
 GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0,0]
+TARGET = [0.5,0.5]
   
 class Individual(object):
     '''
@@ -46,11 +47,14 @@ class Individual(object):
         
         gene = random.choice(GENES)
         if gene in GENES_3:
-            return gene(random.sample(range(0, gnome_qubit_len), 3))
+            q0, q1, q2 = random.sample(range(0, gnome_qubit_len), 3)
+            return gene(cirq.LineQubit(q0),cirq.LineQubit(q1),cirq.LineQubit(q2))
         elif gene in GENES_2:
-            return gene(random.sample(range(0, gnome_qubit_len), 2))
+            q0, q1 = random.sample(range(0, gnome_qubit_len), 2)
+            return gene(cirq.LineQubit(q0),cirq.LineQubit(q1))
         else:
-            return gene(random.sample(range(0, gnome_qubit_len), 1))
+            q0 = random.sample(range(0, gnome_qubit_len), 1)
+            return gene(cirq.LineQubit(q0))
   
     @classmethod
     def create_gnome(self):
@@ -59,7 +63,7 @@ class Individual(object):
         '''
         global TARGET
         gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
-        return cirq.Circuit(cirq.H(qubit) for qubit in cirq.LineQubit.range(gnome_qubit_len))
+        return cirq.Circuit(cirq.I(qubit) for qubit in cirq.LineQubit.range(gnome_qubit_len))
     
     def mate(self, parent2):
         '''
@@ -109,9 +113,11 @@ class Individual(object):
         '''
         global TARGET
         fitness = 0
-        chromosome_state_vector = cirq.Simulator.simulate(self.chromosome)
+        chromosome_results = cirq.Simulator().simulate(self.chromosome)
+        chromosome_state_vector = np.around(chromosome_results.final_state_vector, 3)
+        print(chromosome_state_vector)
         for gene_self, gene_target in zip(chromosome_state_vector, TARGET):
-            fitness += (1-abs(gene_self.real-gene_target.real))^2+(1-abs(gene_self.imag-gene_target.imag))^2
+            fitness += (1-abs(gene_self.real-gene_target.real))**2+(1-abs(gene_self.imag-gene_target.imag))**2
         return fitness
   
 def main():
@@ -129,11 +135,12 @@ def main():
   
     while not found:
 
-        # sort the population in increasing order of fitness score
-        population = sorted(population, key = lambda x:x.fitness)
+        # sort the population in decreasing order of fitness score
+        population = sorted(population, key = lambda x:x.fitness, reverse=True)
 
         # If population is contains optimal fitness
-        if population[0].fitness <= 0:
+        print("0= ",population[0].fitness,", 99= ",population[99].fitness)
+        if population[0].fitness >= (np.shape(TARGET)[0]*2)*0.95:
             found = True
             break
 
