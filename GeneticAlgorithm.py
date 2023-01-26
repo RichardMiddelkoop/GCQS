@@ -21,8 +21,10 @@ GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0.5,0.5]
-  
+TARGET = [0,0,0,1]
+# calculation of the number of qbits
+QBITLEN = int(np.log2(np.shape(TARGET)[0]))
+
 class Individual(object):
     '''
     Class representing individual in population
@@ -37,24 +39,25 @@ class Individual(object):
         TODO: Implement an mutation for Cirq system
         create random genes for mutation
         '''
-        global GENES_1,GENES_2,GENES_3
-        gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
-        if gnome_qubit_len > 2:
+        global GENES_1,GENES_2,GENES_3,QBITLEN
+        QBITLEN = int(np.log2(np.shape(TARGET)[0]))
+        if QBITLEN > 2:
             GENES = GENES_1 + GENES_2 + GENES_3
-        elif gnome_qubit_len > 1:
+        elif QBITLEN > 1:
             GENES = GENES_1 + GENES_2
         else:
             GENES = GENES_1
         
         gene = random.choice(GENES)
         if gene in GENES_3:
-            q0, q1, q2 = random.sample(range(0, gnome_qubit_len), 3)
+            q0, q1, q2 = random.sample(range(0, QBITLEN), 3)
             return gene(cirq.LineQubit(q0),cirq.LineQubit(q1),cirq.LineQubit(q2))
         elif gene in GENES_2:
-            q0, q1 = random.sample(range(0, gnome_qubit_len), 2)
+            print("ADDED GENE2!!")
+            q0, q1 = random.sample(range(0, QBITLEN), 2)
             return gene(cirq.LineQubit(q0),cirq.LineQubit(q1))
         else:
-            q0 = random.sample(range(0, gnome_qubit_len), 1)
+            q0 = random.sample(range(0, QBITLEN), 1)
             return gene(cirq.LineQubit(q0[0]))
   
     @classmethod
@@ -62,9 +65,8 @@ class Individual(object):
         '''
         create chromosome as a string of qubitgenes in superpostion
         '''
-        global TARGET
-        gnome_qubit_len = int(np.log2(np.shape(TARGET)[0]))
-        return cirq.Circuit(cirq.I(qubit) for qubit in cirq.LineQubit.range(gnome_qubit_len))
+        global TARGET, QBITLEN
+        return cirq.Circuit(cirq.I(qubit) for qubit in cirq.LineQubit.range(QBITLEN))
     
     def mate(self, parent2):
         '''
@@ -112,14 +114,13 @@ class Individual(object):
         Calculate fitness score, it is the penalites difference between the target state vector 
         and the actual state vector.
         '''
-        global TARGET
+        global TARGET,QBITLEN
         fitness = 0
         chromosome_results = cirq.Simulator().simulate(self.chromosome)
         chromosome_state_vector = np.around(chromosome_results.final_state_vector, 3)
-        print(chromosome_state_vector)
         for gene_self, gene_target in zip(chromosome_state_vector, TARGET):
-            fitness += (1-abs(gene_self.real-gene_target.real))**2+(1-abs(gene_self.imag-gene_target.imag))**2
-        return fitness
+            fitness += (2-abs(gene_self.real-gene_target.real))**2+(2-abs(gene_self.imag-gene_target.imag))**2
+        return fitness/(16*QBITLEN)#max_fitness
   
 def main():
     global POPULATION_SIZE
@@ -140,8 +141,8 @@ def main():
         population = sorted(population, key = lambda x:x.fitness, reverse=True)
 
         # If population is contains optimal fitness
-        print("0= ",population[0].fitness,", 99= ",population[99].fitness)
-        if population[0].fitness >= (np.shape(TARGET)[0]*2)*0.95:
+        if population[0].fitness >= 0.95:
+
             found = True
             break
 
@@ -163,12 +164,14 @@ def main():
   
         population = new_generation
   
-        print("Generation: {}\tString: {}\tFitness: {}".format(generation,"".join(population[0].chromosome),population[0].fitness))
-  
+        print("Generation: {}\tCircuit: {}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+        if generation == 4: 
+            print("max gen reached!!")
+            found = True
         generation += 1
   
       
-    print("Generation: {}\tString: {}\tFitness: {}".format(generation,"".join(population[0].chromosome),population[0].fitness))
+    print("Generation: {}\nCircuit: {}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
   
 if __name__ == '__main__':
     main()

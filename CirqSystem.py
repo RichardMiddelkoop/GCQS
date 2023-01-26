@@ -1,15 +1,15 @@
 import cirq
 import numpy as np
 # Pick a qubit.
-qubit = cirq.GridQubit(0, 0)
+q0, q1 = cirq.LineQubit.range(2)
 
 # Create a circuit
 circuit = cirq.Circuit(
-    cirq.X(qubit)**0.5,  # Square root of NOT.
-    cirq.measure(qubit, key='m')  # Measurement.
+    cirq.YY(q0,q1)
+    # cirq.measure(qubit, key='m')  # Measurement.
 )
 print("Circuit:")
-print(type(circuit))
+print(circuit)
 result = cirq.Simulator().simulate(circuit)
 print("Results:")
 print(np.around(result.final_state_vector, 3))
