@@ -20,7 +20,7 @@ GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0.707,0,0,0.707]
+TARGET = [0.707,0.707,0,0]
 # calculation of the number of qbits
 QBITLEN = int(np.log2(np.shape(TARGET)[0]))
 
@@ -115,11 +115,17 @@ class Individual(object):
         '''
         global TARGET,QBITLEN
         fitness = 0
+        maxfitness = 8*(2**QBITLEN)
         chromosome_results = cirq.Simulator().simulate(self.chromosome)
         chromosome_state_vector = np.around(chromosome_results.final_state_vector, 3)
         for gene_self, gene_target in zip(chromosome_state_vector, TARGET):
             fitness += (2-abs(gene_self.real-gene_target.real))**2+(2-abs(gene_self.imag-gene_target.imag))**2
-        return fitness/(16*QBITLEN)#max_fitness
+            # Possible heuristic: decreasing the importance of the zero states to try to increase diversity
+            zero_state_penalty = 0.85
+            if gene_self.real == 0 and gene_self.imag == 0 and gene_target.real == 0 and gene_self.imag == 0:
+                fitness -= 8*zero_state_penalty
+                maxfitness -= 8*zero_state_penalty
+        return fitness/maxfitness
   
 def main():
     global POPULATION_SIZE
@@ -141,7 +147,6 @@ def main():
 
         # If population is contains optimal fitness
         if population[0].fitness >= 0.95:
-
             found = True
             break
 
@@ -163,7 +168,9 @@ def main():
   
         population = new_generation
   
-        print("Generation: {}\tCircuit: \n{}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+        if generation % 50 == 0:
+            print("Generation: {}\tCircuit: \n{}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+        
         if generation == 2000: 
             print("max gen reached!!")
             found = True
