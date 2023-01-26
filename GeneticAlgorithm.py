@@ -1,5 +1,4 @@
 ######
-# TODO: add the mutation possibility of creating an additional moment
 # TODO: add possibility for ancillairy bits
 # TODO: implement PowGates and variable rotation gates
 ######
@@ -21,7 +20,7 @@ GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0,0,0,1]
+TARGET = [0.707,0,0,0.707]
 # calculation of the number of qbits
 QBITLEN = int(np.log2(np.shape(TARGET)[0]))
 
@@ -53,7 +52,6 @@ class Individual(object):
             q0, q1, q2 = random.sample(range(0, QBITLEN), 3)
             return gene(cirq.LineQubit(q0),cirq.LineQubit(q1),cirq.LineQubit(q2))
         elif gene in GENES_2:
-            print("ADDED GENE2!!")
             q0, q1 = random.sample(range(0, QBITLEN), 2)
             return gene(cirq.LineQubit(q0),cirq.LineQubit(q1))
         else:
@@ -99,7 +97,8 @@ class Individual(object):
             # for maintaining diversity
             else:
                 child_chromosome.append(self.mutated_genes())
-  
+                if prob > 0.96: # RARE additional mutation to create an additional moment
+                    child_chromosome.append(self.mutated_genes())
         # create new Individual(offspring) using 
         # generated chromosome for offspring
         return Individual(child_chromosome)
@@ -164,14 +163,14 @@ def main():
   
         population = new_generation
   
-        print("Generation: {}\tCircuit: {}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
-        if generation == 4: 
+        print("Generation: {}\tCircuit: \n{}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+        if generation == 2000: 
             print("max gen reached!!")
             found = True
         generation += 1
   
       
-    print("Generation: {}\nCircuit: {}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+    print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
   
 if __name__ == '__main__':
     main()
