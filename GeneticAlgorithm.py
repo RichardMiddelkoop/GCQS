@@ -20,7 +20,7 @@ GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0.707,0.707,0,0]
+TARGET = [0,0,0,0,0.707,0.707,0,0]
 # calculation of the number of qbits
 QBITLEN = int(np.log2(np.shape(TARGET)[0]))
 
@@ -157,12 +157,12 @@ def main():
         s = int((10*POPULATION_SIZE)/100)
         new_generation.extend(population[:s])
   
-        # From 50% of fittest population, Individuals 
+        # From 75% of fittest population, Individuals 
         # will mate to produce offspring
         s = int((90*POPULATION_SIZE)/100)
         for _ in range(s):
-            parent1 = random.choice(population[:50])
-            parent2 = random.choice(population[:50])
+            parent1 = random.choice(population[:75])
+            parent2 = random.choice(population[:75])
             child = parent1.mate(parent2)
             new_generation.append(child)
   
