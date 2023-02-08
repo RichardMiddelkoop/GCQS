@@ -9,10 +9,10 @@
 import random
 import cirq
 import numpy as np
-  
+
 # number of individuals in each generation
 POPULATION_SIZE = 100
-  
+
 # valid genes of the chromosome
 ## TODO: replace with all tested and allowed circuit items.
 GENES_1 = [cirq.I,cirq.X,cirq.Y,cirq.Z,cirq.H,cirq.S,cirq.T]
@@ -20,7 +20,7 @@ GENES_2 = [cirq.CZ,cirq.CNOT,cirq.SWAP,cirq.XX,cirq.YY,cirq.ZZ]
 GENES_3 = [cirq.CCNOT,cirq.CCZ,cirq.CSWAP]
 
 # target state vector to be generated
-TARGET = [0,0,0,0,0.707,0.707,0,0]
+TARGET = [0.707,0,0,0.707]
 # calculation of the number of qbits
 QBITLEN = int(np.log2(np.shape(TARGET)[0]))
 
@@ -125,6 +125,7 @@ class Individual(object):
             if gene_self.real == 0 and gene_self.imag == 0 and gene_target.real == 0 and gene_self.imag == 0:
                 fitness -= 8*zero_state_penalty
                 maxfitness -= 8*zero_state_penalty
+
         return fitness/maxfitness
   
 def main():
@@ -169,7 +170,7 @@ def main():
         population = new_generation
   
         if generation % 50 == 0:
-            print("Generation: {}\tCircuit: \n{}\tFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+            print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         
         if generation == 2000: 
             print("max gen reached!!")

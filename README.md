@@ -6,3 +6,4 @@ Genetically computing quantum systems
 ## import cirq
 ## import numpy
 ## import random
+## import sympy
