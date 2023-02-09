@@ -4,18 +4,22 @@ import random
 import cirq
 import numpy as np
 import sympy
-from HelperQGA import create_instance
+from HelperQGA import create_instance, energy_func
+
+def generate_parameter_circuit():
+    alpha = sympy.Symbol('alpha')
+    beta = sympy.Symbol('beta')
+    gamma = sympy.Symbol('gamma')
+    return create_instance(length=3, p1=alpha, p2=beta, p3=gamma)
 
 # number of individuals in each generation
 POPULATION_SIZE = 100
 
 # The choice of instance used for the individuals
 ## TODO: Allow for more choices to choose from
-def generate_parameter_circuit():
-    alpha = sympy.Symbol('alpha')
-    beta = sympy.Symbol('beta')
-    gamma = sympy.Symbol('gamma')
-    return create_instance(length=3, p1=alpha, p2=beta, p3=gamma)
+PARAMETERS = ["alpha","beta","gamma"]
+H,JR,JC,TEST_INSTANCE = generate_parameter_circuit()
+
 
 class Individual(object):
     '''
@@ -28,35 +32,17 @@ class Individual(object):
     @classmethod
     def mutated_genes(self):
         '''
-        TODO: Implement an mutation for Cirq system
-        create random genes for mutation
+        create random number for a gene to be mutated by
         '''
-        global GENES_1,GENES_2,GENES_3,QBITLEN
-        QBITLEN = int(np.log2(np.shape(TARGET)[0]))
-        if QBITLEN > 2:
-            GENES = GENES_1 + GENES_2 + GENES_3
-        elif QBITLEN > 1:
-            GENES = GENES_1 + GENES_2
-        else:
-            GENES = GENES_1
-        
-        gene = random.choice(GENES)
-        if gene in GENES_3:
-            q0, q1, q2 = random.sample(range(0, QBITLEN), 3)
-            return gene(cirq.LineQubit(q0),cirq.LineQubit(q1),cirq.LineQubit(q2))
-        elif gene in GENES_2:
-            q0, q1 = random.sample(range(0, QBITLEN), 2)
-            return gene(cirq.LineQubit(q0),cirq.LineQubit(q1))
-        else:
-            q0 = random.sample(range(0, QBITLEN), 1)
-            return gene(cirq.LineQubit(q0[0]))
+        return random.randint(-100,100)*random.random()
   
     @classmethod
     def create_gnome(self):
         '''
-        create chromosome as a string of qubitgenes in superpostion
+        create chromosome of parameters initialised between 0 and 1
         '''
-        return generate_parameter_circuit()
+        global PARAMETERS
+        return {param: random.random() for param in PARAMETERS}
     
     def mate(self, parent2):
         '''
@@ -64,34 +50,22 @@ class Individual(object):
         '''
   
         # chromosome for offspring
-        child_chromosome = cirq.Circuit()
+        child_chromosome = {}
 
-        # Seperate both parents in moments
-        ## Moments are a collection of Operations taht all act during the same abstract time slice.
-        ## Note that if the systems aren't of identical length only the matching section are considered.
-        for gene_parent_1, gene_parent_2 in zip(self.chromosome, parent2.chromosome):    
-  
+        for param in self.chromosome:    
             # random probability  
             prob = random.random()
   
             # if prob is less than 0.45, insert gene
-            # from parent 1 
-            if prob < 0.45:
-                child_chromosome.append(gene_parent_1)
-  
-            # if prob is between 0.45 and 0.90, insert
-            # gene from parent 2
-            elif prob < 0.90:
-                child_chromosome.append(gene_parent_2)
-  
-            # otherwise insert random gene(mutate), 
-            # for maintaining diversity
+            # from parent 1
+            if prob <= 0.50:
+                child_chromosome[param] = self.chromosome[param]
+                if prob > 0.45:
+                    child_chromosome[param] *= self.mutated_genes()
             else:
-                child_chromosome.append(self.mutated_genes())
-                if prob > 0.96: # RARE additional mutation to create an additional moment
-                    child_chromosome.append(self.mutated_genes())
-        # create new Individual(offspring) using 
-        # generated chromosome for offspring
+                child_chromosome[param] = parent2.chromosome[param]
+                if prob > 0.95:
+                    child_chromosome[param] *= self.mutated_genes()
         return Individual(child_chromosome)
     
     ### The current fitness calculation is very simple 
@@ -100,24 +74,17 @@ class Individual(object):
     # fitness_value = real_score + imaginary_score
     def cal_fitness(self):
         '''
-        TODO: Estime energy level of the given quantum circuit
-        Calculate fitness score, it is the penalites difference between the target state vector 
-        and the actual state vector.
+        TODO: Allow for more flexibility in instances, possibly more a large portion back to the helper file
+        Calculate fitness score
         '''
-        global TARGET,QBITLEN
-        fitness = 0
-        maxfitness = 8*(2**QBITLEN)
-        chromosome_results = cirq.Simulator().simulate(self.chromosome)
-        chromosome_state_vector = np.around(chromosome_results.final_state_vector, 3)
-        for gene_self, gene_target in zip(chromosome_state_vector, TARGET):
-            fitness += (2-abs(gene_self.real-gene_target.real))**2+(2-abs(gene_self.imag-gene_target.imag))**2
-            # Possible heuristic: decreasing the importance of the zero states to try to increase diversity
-            zero_state_penalty = 0.85
-            if gene_self.real == 0 and gene_self.imag == 0 and gene_target.real == 0 and gene_self.imag == 0:
-                fitness -= 8*zero_state_penalty
-                maxfitness -= 8*zero_state_penalty
-
-        return fitness/maxfitness
+        global TEST_INSTANCE
+        simulator = cirq.Simulator()
+        qubits = cirq.GridQubit.square(3)
+        circuit = cirq.resolve_parameters(TEST_INSTANCE, self.chromosome)
+        circuit.append(cirq.measure(*qubits, key='x'))
+        result = simulator.run(circuit, repetitions=100)
+        energy_hist = result.histogram(key='x', fold_func=energy_func(3, H, JR, JC))
+        return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
   
 def main():
     global POPULATION_SIZE
@@ -134,13 +101,14 @@ def main():
   
     while not found:
 
-        # sort the population in decreasing order of fitness score
-        population = sorted(population, key = lambda x:x.fitness, reverse=True)
+        # sort the population in increasing order of fitness score
+        population = sorted(population, key = lambda x:x.fitness, reverse=False)
 
+        # TODO: decide on possible succes stopping criteria
         # If population is contains optimal fitness
-        if population[0].fitness >= 0.95:
-            found = True
-            break
+        # if population[0].fitness >= 0.95:
+        #     found = True
+        #     break
 
         new_generation = []
   
@@ -149,12 +117,12 @@ def main():
         s = int((10*POPULATION_SIZE)/100)
         new_generation.extend(population[:s])
   
-        # From 75% of fittest population, Individuals 
+        # From 50% of fittest population, Individuals 
         # will mate to produce offspring
         s = int((90*POPULATION_SIZE)/100)
         for _ in range(s):
-            parent1 = random.choice(population[:75])
-            parent2 = random.choice(population[:75])
+            parent1 = random.choice(population[:50])
+            parent2 = random.choice(population[:50])
             child = parent1.mate(parent2)
             new_generation.append(child)
   
