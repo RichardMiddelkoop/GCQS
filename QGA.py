@@ -1,25 +1,26 @@
 # Quantum Genetic Algorithm
-
 import random
 import cirq
 import numpy as np
 import sympy
 from HelperQGA import create_instance, energy_func
 
-def generate_parameter_circuit():
+def generate_parameter_circuit(length=3):
     alpha = sympy.Symbol('alpha')
     beta = sympy.Symbol('beta')
     gamma = sympy.Symbol('gamma')
-    return create_instance(length=3, p1=alpha, p2=beta, p3=gamma)
+    return create_instance(length=length, p1=alpha, p2=beta, p3=gamma)
 
+## parameters for the algorithm ##
 # number of individuals in each generation
 POPULATION_SIZE = 100
-
-# The choice of instance used for the individuals
-## TODO: Allow for more choices to choose from
+# number of repitions in the sampling
+REPETITIONS = 100
+# The parameters used for the problem instance
 PARAMETERS = ["alpha","beta","gamma"]
-H,JR,JC,TEST_INSTANCE = generate_parameter_circuit()
-
+LENGTH = 3
+H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(LENGTH)
+##################################
 
 class Individual(object):
     '''
@@ -41,7 +42,7 @@ class Individual(object):
         mutation_odds = random.random()
         if mutation_odds < 0.9:
              return random.uniform(-2,2)
-             # 10% chance to have a more sizable mutation
+        # 10% chance to have a more sizable mutation
         return 100*random.uniform(-2,2)
   
     @classmethod
@@ -63,14 +64,18 @@ class Individual(object):
         for param in self.chromosome:    
             # random probability  
             prob = random.random()
-  
-            # if prob is less than 0.45, insert gene
+
             # from parent 1
+            # if prob is less than 0.45, insert gene
+            # if larger than 0.45 mutate the gene
             if prob <= 0.50:
                 child_chromosome[param] = self.chromosome[param]
                 if prob > 0.45:
                     child_chromosome[param] *= self.mutated_genes()
             else:
+                # from parent 2
+                # if prob is less than 0.95, insert gene
+                # if larger than 0.95 mutate the gene
                 child_chromosome[param] = parent2.chromosome[param]
                 if prob > 0.95:
                     child_chromosome[param] *= self.mutated_genes()
@@ -82,12 +87,12 @@ class Individual(object):
         TODO: Allow for more flexibility in instances, possibly more a large portion back to the helper file
         Calculate fitness score
         '''
-        global TEST_INSTANCE
+        global TEST_INSTANCE, LENGTH, REPETITIONS
         simulator = cirq.Simulator()
-        qubits = cirq.GridQubit.square(3)
+        qubits = cirq.GridQubit.square(LENGTH)
         circuit = cirq.resolve_parameters(TEST_INSTANCE, self.chromosome)
         circuit.append(cirq.measure(*qubits, key='x'))
-        result = simulator.run(circuit, repetitions=100)
+        result = simulator.run(circuit, repetitions=REPETITIONS)
         energy_hist = result.histogram(key='x', fold_func=energy_func(3, H, JR, JC))
         return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
   
