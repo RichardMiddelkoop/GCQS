@@ -34,7 +34,15 @@ class Individual(object):
         '''
         create random number for a gene to be mutated by
         '''
-        return random.randint(-100,100)*random.random()
+        # [-2,-1) negate increase
+        # (-1,0) negate decrease
+        # (0,1) decrease
+        # (1,2] increase
+        mutation_odds = random.random()
+        if mutation_odds < 0.9:
+             return random.uniform(-2,2)
+             # 10% chance to have a more sizable mutation
+        return 100*random.uniform(-2,2)
   
     @classmethod
     def create_gnome(self):
@@ -69,9 +77,6 @@ class Individual(object):
         return Individual(child_chromosome)
     
     ### The current fitness calculation is very simple 
-    # real_score = (1-abs(target_value_real-individual_value_real))^2
-    # imaginary_score = (1-abs(target_value_imaginary-individual_value_imaginary))^2
-    # fitness_value = real_score + imaginary_score
     def cal_fitness(self):
         '''
         TODO: Allow for more flexibility in instances, possibly more a large portion back to the helper file
@@ -111,15 +116,15 @@ def main():
         #     break
 
         new_generation = []
-  
-        # Perform Elitism, that mean 10% of fittest population
+        # Perform Elitism, that means 10% of fittest population
         # goes to the next generation
+        # Note: we only include a selection of the fittest population in order to escape a skewed sample in the selection process
         s = int((10*POPULATION_SIZE)/100)
-        new_generation.extend(population[:s])
+        new_generation.extend(random.choices(population[:s], k=int((9*POPULATION_SIZE)/100)))
   
         # From 50% of fittest population, Individuals 
         # will mate to produce offspring
-        s = int((90*POPULATION_SIZE)/100)
+        s = int((91*POPULATION_SIZE)/100)
         for _ in range(s):
             parent1 = random.choice(population[:50])
             parent2 = random.choice(population[:50])
@@ -131,7 +136,7 @@ def main():
         if generation % 50 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         
-        if generation == 2000: 
+        if generation == 20000: 
             print("max gen reached!!")
             found = True
         generation += 1
