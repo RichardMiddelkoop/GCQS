@@ -141,7 +141,7 @@ def main():
         if generation % 50 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         
-        if generation == 20000: 
+        if generation == 1000: 
             print("max gen reached!!")
             found = True
         generation += 1

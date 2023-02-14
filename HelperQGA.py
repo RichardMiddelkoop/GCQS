@@ -3,7 +3,8 @@ import numpy as np
 import random
 import sympy
 #!https://quantumai.google/cirq/experiments/variational_algorithm
-
+# Set this for experiment, use None otherwise!!
+RANDOM_SEED = 10
 
 def rot_x_layer(length, half_turns):
     """cirq sub-circuit: Yields X rotations by half_turns on a square grid of given length."""
@@ -17,10 +18,14 @@ def rot_x_layer(length, half_turns):
             yield rot(cirq.GridQubit(i, j))
 
 def rand2d(rows, cols):
+    global RANDOM_SEED
+    random.seed(RANDOM_SEED)
     return [[random.choice([+1, -1]) for _ in range(cols)] for _ in range(rows)]
     
 def random_instance(length):
     """Generates a random instance with the parameters h and j, returns (h: the field terms, jr: links in the row and jc: links in the column)"""
+    global RANDOM_SEED
+    random.seed(RANDOM_SEED)
     # transverse field terms
     h = rand2d(length, length)
     # links within a row
@@ -115,4 +120,3 @@ def create_instance_and_calculate_expected_value(length=3,p1=0.1, p2=0.2, p3=0.3
     result = simulator.run(circuit, repetitions=repetitions)
     energy_hist = result.histogram(key='x', fold_func=energy_func(3, h, jr, jc))
     return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
-
