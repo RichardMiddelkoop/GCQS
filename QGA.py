@@ -1,9 +1,7 @@
 # Quantum Genetic Algorithm
 import random
-import cirq
-import numpy as np
 import sympy
-from HelperQGA import create_instance, energy_func
+from HelperQGA import create_instance, calculate_expected_value
 
 def generate_parameter_circuit(length=3):
     alpha = sympy.Symbol('alpha')
@@ -18,8 +16,7 @@ POPULATION_SIZE = 100
 REPETITIONS = 100
 # The parameters used for the problem instance
 PARAMETERS = ["alpha","beta","gamma"]
-LENGTH = 3
-H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(LENGTH)
+H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(len(PARAMETERS))
 ##################################
 
 class Individual(object):
@@ -84,17 +81,11 @@ class Individual(object):
     ### The current fitness calculation is very simple 
     def cal_fitness(self):
         '''
-        TODO: Allow for more flexibility in instances, possibly more a large portion back to the helper file
+        TODO: Allow for more flexibility in instances
         Calculate fitness score
         '''
-        global TEST_INSTANCE, LENGTH, REPETITIONS
-        simulator = cirq.Simulator()
-        qubits = cirq.GridQubit.square(LENGTH)
-        circuit = cirq.resolve_parameters(TEST_INSTANCE, self.chromosome)
-        circuit.append(cirq.measure(*qubits, key='x'))
-        result = simulator.run(circuit, repetitions=REPETITIONS)
-        energy_hist = result.histogram(key='x', fold_func=energy_func(3, H, JR, JC))
-        return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
+        global H,JR,JC,TEST_INSTANCE, REPETITIONS
+        return calculate_expected_value(H,JR,JC,TEST_INSTANCE,self.chromosome,REPETITIONS)
   
 def main():
     global POPULATION_SIZE

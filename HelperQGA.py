@@ -1,7 +1,6 @@
 import cirq
 import numpy as np
 import random
-import sympy
 #!https://quantumai.google/cirq/experiments/variational_algorithm
 # Set this for experiment, use None otherwise!!
 RANDOM_SEED = 10
@@ -118,5 +117,15 @@ def create_instance_and_calculate_expected_value(length=3,p1=0.1, p2=0.2, p3=0.3
     h,jr,jc,circuit = create_instance(length,p1,p2,p3)
     circuit.append(cirq.measure(*qubits, key='x'))
     result = simulator.run(circuit, repetitions=repetitions)
-    energy_hist = result.histogram(key='x', fold_func=energy_func(3, h, jr, jc))
+    energy_hist = result.histogram(key='x', fold_func=energy_func(length, h, jr, jc))
+    return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
+
+
+def calculate_expected_value(H,JR,JC,TEST_INSTANCE,params,repetitions=200):
+    simulator = cirq.Simulator()
+    qubits = cirq.GridQubit.square(len(params))
+    circuit = cirq.resolve_parameters(TEST_INSTANCE, params)
+    circuit.append(cirq.measure(*qubits, key='x'))
+    result = simulator.run(circuit, repetitions=repetitions)
+    energy_hist = result.histogram(key='x', fold_func=energy_func(len(params), H, JR, JC))
     return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions
