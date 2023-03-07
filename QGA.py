@@ -2,6 +2,7 @@
 import random
 import sympy
 from HelperQGA import create_instance, calculate_expected_value
+import time
 
 def generate_parameter_circuit(length=3):
     alpha = sympy.Symbol('alpha')
@@ -11,22 +12,25 @@ def generate_parameter_circuit(length=3):
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
-POPULATION_SIZE = 100
+POPULATION_SIZE = 10
 # number of repitions in the sampling
-REPETITIONS = 100
-# The parameters used for the problem instance
-PARAMETERS = ["alpha","beta","gamma"]
-H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(len(PARAMETERS))
+REPETITIONS = 10
+# length of the VQA
+LENGTH = 6
+# stopping criteria
+MAX_GENERATIONS = 1000
+## created variables of the problem instance ##
+H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(LENGTH)
 ##################################
 
 class Individual(object):
     '''
-    Class representing individual in population
+    class representing individual in population
     '''
     def __init__(self, chromosome):
         self.chromosome = chromosome 
         self.fitness = self.cal_fitness()
-  
+
     @classmethod
     def mutated_genes(self):
         '''
@@ -38,23 +42,23 @@ class Individual(object):
         # (1,2] increase
         mutation_odds = random.random()
         if mutation_odds < 0.9:
-             return random.uniform(-2,2)
+            return random.uniform(-2,2)
         # 10% chance to have a more sizable mutation
         return 100*random.uniform(-2,2)
-  
+
     @classmethod
     def create_gnome(self):
         '''
         create chromosome of parameters initialised between 0 and 1
         '''
-        global PARAMETERS
-        return {param: random.random() for param in PARAMETERS}
+        params = ["alpha","beta","gamma"]
+        return {param: random.random() for param in params}
     
     def mate(self, parent2):
         '''
-        Perform mating and produce new offspring
+        perform mating and produce new offspring
         '''
-  
+
         # chromosome for offspring
         child_chromosome = {}
 
@@ -82,24 +86,29 @@ class Individual(object):
     def cal_fitness(self):
         '''
         TODO: Allow for more flexibility in instances
-        Calculate fitness score
+        calculate fitness score
         '''
         global H,JR,JC,TEST_INSTANCE, REPETITIONS
         return calculate_expected_value(H,JR,JC,TEST_INSTANCE,self.chromosome,REPETITIONS)
-  
+
 def main():
-    global POPULATION_SIZE
-  
+    global POPULATION_SIZE, MAX_GENERATIONS
+
     # initialisation of variables
     generation = 1
     found = False
     population = []
 
+    # used to calculate expected runtime
+    start = time.process_time()
+
     # initial population
-    for _ in range(POPULATION_SIZE):
+    for i in range(POPULATION_SIZE):
                 gnome = Individual.create_gnome()
                 population.append(Individual(gnome))
-  
+    
+    # print expected runtime 
+    print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
     while not found:
 
         # sort the population in increasing order of fitness score
@@ -114,31 +123,31 @@ def main():
         new_generation = []
         # Perform Elitism, that means 10% of fittest population
         # goes to the next generation
-        # Note: we only include a selection of the fittest population in order to escape a skewed sample in the selection process
         s = int((10*POPULATION_SIZE)/100)
-        new_generation.extend(random.choices(population[:s], k=int((9*POPULATION_SIZE)/100)))
-  
+        new_generation.extend(population[:s])
+
         # From 50% of fittest population, Individuals 
         # will mate to produce offspring
-        s = int((91*POPULATION_SIZE)/100)
+        s = int((90*POPULATION_SIZE)/100)
         for _ in range(s):
             parent1 = random.choice(population[:50])
             parent2 = random.choice(population[:50])
             child = parent1.mate(parent2)
             new_generation.append(child)
-  
+
         population = new_generation
-  
+        print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         if generation % 50 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         
-        if generation == 1000: 
+        if generation == MAX_GENERATIONS: 
             print("max gen reached!!")
             found = True
         generation += 1
-  
-      
+
+
     print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
-  
+
+
 if __name__ == '__main__':
     main()

@@ -3,11 +3,12 @@ import numpy as np
 import random
 #!https://quantumai.google/cirq/experiments/variational_algorithm
 # Set this for experiment, use None otherwise!!
-RANDOM_SEED = 10
+RANDOM_SEED = None
 
 def rot_x_layer(length, half_turns):
-    """cirq sub-circuit: Yields X rotations by half_turns on a square grid of given length."""
-
+    '''
+    cirq sub-circuit: Yields X rotations by half_turns on a square grid of given length.
+    '''
     # Define the gate once and then re-use it for each Operation.
     rot = cirq.XPowGate(exponent=half_turns)
 
@@ -16,13 +17,20 @@ def rot_x_layer(length, half_turns):
         for j in range(length):
             yield rot(cirq.GridQubit(i, j))
 
+
 def rand2d(rows, cols):
+    '''
+    initialises the links within a range to +1 or -1
+    '''
     global RANDOM_SEED
     random.seed(RANDOM_SEED)
     return [[random.choice([+1, -1]) for _ in range(cols)] for _ in range(rows)]
-    
+
+
 def random_instance(length):
-    """Generates a random instance with the parameters h and j, returns (h: the field terms, jr: links in the row and jc: links in the column)"""
+    '''
+    generates a random instance with the parameters h and j, returns (h: the field terms, jr: links in the row and jc: links in the column)
+    '''
     global RANDOM_SEED
     random.seed(RANDOM_SEED)
     # transverse field terms
@@ -33,21 +41,31 @@ def random_instance(length):
     jc = rand2d(length, length - 1)
     return (h, jr, jc)
 
+
 def prepare_plus_layer(length):
+    '''
+    applies the hadamard gate to a grid of a given length
+    '''
     for i in range(length):
         for j in range(length):
             yield cirq.H(cirq.GridQubit(i, j))
 
+
 def rot_z_layer(h, half_turns):
-    """cirq sub-circuit: Yields Z rotations by half_turns conditioned on the field h."""
+    '''
+    cirq sub-circuit: Yields Z rotations by half_turns conditioned on the field h.
+    '''
     gate = cirq.ZPowGate(exponent=half_turns)
     for i, h_row in enumerate(h):
         for j, h_ij in enumerate(h_row):
             if h_ij == 1:
                 yield gate(cirq.GridQubit(i, j))
 
+
 def rot_11_layer(jr, jc, half_turns):
-    """cirq sub-circuit: Yields rotations about |11> conditioned on the jr and jc fields."""
+    '''
+    cirq sub-circuit: Yields rotations about |11> conditioned on the jr and jc fields.
+    '''
     cz_gate = cirq.CZPowGate(exponent=half_turns)    
     for i, jr_row in enumerate(jr):
         for j, jr_ij in enumerate(jr_row):
@@ -73,10 +91,18 @@ def rot_11_layer(jr, jc, half_turns):
                 yield cirq.X(q)
                 yield cirq.X(q_1)
 
+
 def initial_step(length):
+    '''
+    applies the hadamard gate to a grid of a given length
+    '''
     yield prepare_plus_layer(length)
 
+
 def one_step(h, jr, jc, x_half_turns, h_half_turns, j_half_turns):
+    '''
+    cirq sub-circuit: yields layers of rot_z, rot_11 and rot_x
+    '''
     length = len(h)
     yield rot_z_layer(h, h_half_turns)
     yield rot_11_layer(jr, jc, j_half_turns)
@@ -84,7 +110,9 @@ def one_step(h, jr, jc, x_half_turns, h_half_turns, j_half_turns):
 
 # Using all function create an ansatz instance 
 def create_instance(length=3, p1=0.1, p2=0.2, p3=0.3):
-    """Return a problem instance"""
+    '''
+    Return a problem instance
+    '''
     h, jr, jc = random_instance(length)
     circuit = cirq.Circuit()  
     circuit.append(initial_step(len(h)))
@@ -96,8 +124,7 @@ def create_instance(length=3, p1=0.1, p2=0.2, p3=0.3):
 def energy_func(length, h, jr, jc):
     def energy(measurements):
         # Reshape measurement into array that matches grid shape.
-        meas_list_of_lists = [measurements[i * length:(i + 1) * length]
-                              for i in range(length)]
+        meas_list_of_lists = [measurements[i * length:(i + 1) * length] for i in range(length)]
         # Convert true/false to +1/-1.
         pm_meas = 1 - 2 * np.array(meas_list_of_lists).astype(np.int32)
 
@@ -111,7 +138,11 @@ def energy_func(length, h, jr, jc):
         return tot_energy
     return energy
 
+
 def create_instance_and_calculate_expected_value(length=3,p1=0.1, p2=0.2, p3=0.3, repetitions=100):
+    '''
+    initialises an ansatz for the ising model and calculates the expected value with given gate parameters
+    '''
     simulator = cirq.Simulator()
     qubits = cirq.GridQubit.square(length)
     h,jr,jc,circuit = create_instance(length,p1,p2,p3)
@@ -122,10 +153,13 @@ def create_instance_and_calculate_expected_value(length=3,p1=0.1, p2=0.2, p3=0.3
 
 
 def calculate_expected_value(H,JR,JC,TEST_INSTANCE,params,repetitions=200):
+    '''
+    returns the expected value of a given quantum circuit
+    '''
     simulator = cirq.Simulator()
-    qubits = cirq.GridQubit.square(len(params))
+    qubits = cirq.GridQubit.square(len(H))
     circuit = cirq.resolve_parameters(TEST_INSTANCE, params)
     circuit.append(cirq.measure(*qubits, key='x'))
     result = simulator.run(circuit, repetitions=repetitions)
-    energy_hist = result.histogram(key='x', fold_func=energy_func(len(params), H, JR, JC))
+    energy_hist = result.histogram(key='x', fold_func=energy_func(len(H), H, JR, JC))
     return np.sum([k * v for k,v in energy_hist.items()]) / result.repetitions

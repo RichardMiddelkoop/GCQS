@@ -20,7 +20,7 @@ def energy_from_params(params):
     return calculate_expected_value(H,JR,JC,TEST_INSTANCE,params,REPETITIONS)
 
 # TODO: Test different variations of gradient estimations
-def gradient_energy(alpha, beta, gamma):
+def symmetric_gradient_energy(alpha, beta, gamma):
     """Uses a symmetric difference to calulate the gradient."""
     epsilon = 10**-3  # Try different values of the discretization parameter
 
@@ -41,7 +41,7 @@ def gradient_energy(alpha, beta, gamma):
 
     return grad_a, grad_g, grad_b
 
-def gradient_descent(iterations=10000, learning_rate=0.001):
+def gradient_descent(version="symmetric", iterations=10000, learning_rate=0.001):
     # initialise the parameters
     alpha = random.random()
     beta = random.random()
@@ -49,7 +49,8 @@ def gradient_descent(iterations=10000, learning_rate=0.001):
 
     for i in range(iterations + 1):
         # Compute the gradient.
-        grad_a, grad_g, grad_b = gradient_energy(alpha, beta, gamma)
+        if version=="symmetric":
+            grad_a, grad_g, grad_b = symmetric_gradient_energy(alpha, beta, gamma)
 
         # Update the parameters.
         alpha -= learning_rate * grad_a
