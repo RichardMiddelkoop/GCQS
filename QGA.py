@@ -12,11 +12,11 @@ def generate_parameter_circuit(length=3):
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
-POPULATION_SIZE = 10
+POPULATION_SIZE = 100
 # number of repitions in the sampling
-REPETITIONS = 10
+REPETITIONS = 100
 # length of the VQA
-LENGTH = 6
+LENGTH = 3
 # stopping criteria
 MAX_GENERATIONS = 1000
 ## created variables of the problem instance ##
