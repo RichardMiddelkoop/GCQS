@@ -136,7 +136,6 @@ def main():
             new_generation.append(child)
 
         population = new_generation
-        print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         if generation % 50 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         

@@ -1,7 +1,7 @@
 import sympy
 import random
 from HelperQGA import create_instance, calculate_expected_value
-# TODO: make the gradients variable for the number of parameters
+
 def generate_parameter_circuit(length=3):
     alpha = sympy.Symbol('alpha')
     beta = sympy.Symbol('beta')
@@ -11,8 +11,8 @@ def generate_parameter_circuit(length=3):
 # number of repitions in the sampling
 REPETITIONS = 100
 # The parameters used for the problem instance
-PARAMETERS = ["alpha","beta","gamma"]
-H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(len(PARAMETERS))
+LENGTH = 3
+H,JR,JC,TEST_INSTANCE = generate_parameter_circuit(LENGTH)
 
 def energy_from_params(params):
     """Returns the energy given values of the parameters."""
