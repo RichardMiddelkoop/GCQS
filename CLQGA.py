@@ -15,17 +15,24 @@ ELITISM_RATE = 0.10
 # number of layers in the ansatz
 CIRCUIT_DEPTH = 6
 # the encoding of the circuit takes 11 bits for each circuit layer
-CHROMOSOME_LENGTH = CIRCUIT_DEPTH * 11
+# do not change unless the encoding of gates has changed!
+GATE_ENCODING_LENGTH = 6 
+# nr of bits used to partion up the rotations given by the parameters. 5 means [0,2\pi] is divided in 2^5 sections
+PARAMETER_SECTIONING_LENGTH = 5
+CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + PARAMETER_SECTIONING_LENGTH)
 
 #TODO: implement these steps
-# the hamiltonion used as observable
+# the hamiltonian used as observable
+# TODO: choose a hamiltonian to use
 H = None
 # the initial quantum state used
+# TODO: generate the initial state
 INITIAL_STATE = None
 # the path to IBM chip csv
 CHIP_LAYOUT_PATH = None
 
 ## subtract the required information from the given path
+# TODO: build function in helper file that subtracts the required information 
 NR_OF_QUBITS = None
 
 class Individual(object):
@@ -34,7 +41,7 @@ class Individual(object):
     '''
     def __init__(self, chromosome):
         self.chromosome = chromosome 
-        self.fitness = 0
+        self.fitness = -1
 
     @classmethod
     def create_gnome(self):
@@ -67,6 +74,7 @@ def combination(children_population, parent_population):
         slice = random.randint(0,CHROMOSOME_LENGTH)
         children_population.append(Individual(parents[0].chromosome[:slice]+parents[1].chromosome[slice:]))
         children_population.append(Individual(parents[1].chromosome[:slice]+parents[0].chromosome[slice:]))
+
     return children_population
 
 def selection(parent_population):
@@ -74,9 +82,11 @@ def selection(parent_population):
     perform selection using elitism, returns initial children_population
     '''
     global ELITISM_RATE
+
     parent_population = sorted(parent_population, key=lambda individual: individual.fitness, reverse=True)
     cut_off = int(ELITISM_RATE*len(parent_population))
     children_population = parent_population[:cut_off]
+
     return children_population
     
 # ### The current fitness calculation is very simple 
@@ -84,10 +94,17 @@ def fitness(population):
     '''
     calculate fitness score
     '''
-    global H,INITIAL_STATE, CHIP_LAYOUT
+    global H,INITIAL_STATE
+
+    #TODO: decode chromosome to circuit
+    #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
+    #TODO: decide upon a maximum CNOT value allow within a circuit and keep in mind the impact of the SWAPS with respect to the total value
+    #TODO: calculate the energy/gradient of the circuit using the H and the initial state
+    #TODO: the calculation will use some sort of optimizer starting from initial parameter encoded in the genome, think hard about what to use and why you choose it
     for individual in population:
         genome = individual.chromosome
         individual.fitness = 0
+    
     return population
 
 def main():
@@ -102,7 +119,7 @@ def main():
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
-
+    #TODO: Include other stopping criteria if wanted/possible
     while not found:
 
         if generation == 1:
