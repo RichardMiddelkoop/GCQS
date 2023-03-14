@@ -103,9 +103,9 @@ def main():
     start = time.process_time()
 
     # initial population
-    for i in range(POPULATION_SIZE):
-                gnome = Individual.create_gnome()
-                population.append(Individual(gnome))
+    for _ in range(POPULATION_SIZE):
+        gnome = Individual.create_gnome()
+        population.append(Individual(gnome))
     
     # print expected runtime 
     print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
