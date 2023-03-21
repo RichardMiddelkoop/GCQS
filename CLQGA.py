@@ -1,5 +1,6 @@
 import random
 import time
+from HelperCLQGA import genome_to_circuit
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -17,9 +18,9 @@ CIRCUIT_DEPTH = 6
 # the encoding of the circuit takes 11 bits for each circuit layer
 # do not change unless the encoding of gates has changed!
 GATE_ENCODING_LENGTH = 6 
-# nr of bits used to partion up the rotations given by the parameters. 5 means [0,2\pi] is divided in 2^5 sections
-PARAMETER_SECTIONING_LENGTH = 5
-CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + PARAMETER_SECTIONING_LENGTH)
+# nr of qubits in the system
+QUBIT_SECTIONING_LENGTH = 5
+CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
 
 #TODO: implement these steps
 # the hamiltonian used as observable
@@ -34,6 +35,7 @@ CHIP_LAYOUT_PATH = None
 ## subtract the required information from the given path
 # TODO: build function in helper file that subtracts the required information 
 NR_OF_QUBITS = None
+NR_OF_GATES = CIRCUIT_DEPTH
 
 class Individual(object):
     '''
@@ -94,7 +96,7 @@ def fitness(population):
     '''
     calculate fitness score
     '''
-    global H,INITIAL_STATE
+    global H, INITIAL_STATE, CHIP_LAYOUT_PATH, NR_OF_QUBITS, NR_OF_GATES
 
     #TODO: decode chromosome to circuit
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
@@ -103,6 +105,7 @@ def fitness(population):
     #TODO: the calculation will use some sort of optimizer starting from initial parameter encoded in the genome, think hard about what to use and why you choose it
     for individual in population:
         genome = individual.chromosome
+        genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
         individual.fitness = 0
     
     return population
