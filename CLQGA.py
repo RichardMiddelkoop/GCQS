@@ -4,9 +4,9 @@ from HelperCLQGA import genome_to_circuit
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
-POPULATION_SIZE = 100
+POPULATION_SIZE = 50
 # maximum number of generation the algorithm can run
-MAX_GENERATIONS = 100
+MAX_GENERATIONS = 50
 # mutation rate of a gene in the mutation phase
 # 0 < MUTATION_RATE < 1
 MUTATION_RATE = 0.20
@@ -34,7 +34,7 @@ CHIP_LAYOUT_PATH = None
 
 ## subtract the required information from the given path
 # TODO: build function in helper file that subtracts the required information 
-NR_OF_QUBITS = None
+NR_OF_QUBITS = 5
 NR_OF_GATES = CIRCUIT_DEPTH
 
 class Individual(object):
@@ -98,15 +98,15 @@ def fitness(population):
     '''
     global H, INITIAL_STATE, CHIP_LAYOUT_PATH, NR_OF_QUBITS, NR_OF_GATES
 
-    #TODO: decode chromosome to circuit
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
-    #TODO: decide upon a maximum CNOT value allow within a circuit and keep in mind the impact of the SWAPS with respect to the total value
+    #TODO: decide upon a maximum CNOT value allow within a circuit
     #TODO: calculate the energy/gradient of the circuit using the H and the initial state
     #TODO: the calculation will use some sort of optimizer starting from initial parameter encoded in the genome, think hard about what to use and why you choose it
+
     for individual in population:
         genome = individual.chromosome
-        genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        individual.fitness = 0
+        circuit, complexity = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
+        individual.fitness = 1/(1+complexity)
     
     return population
 
@@ -141,7 +141,10 @@ def main():
             print("max gen reached!!")
             found = True
         generation += 1
-
-
+    
+    # if wanted, uncomment to see the final gate
+    global NR_OF_QUBITS, NR_OF_GATES
+    circuit, _ = genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)
+    print(circuit)
 if __name__ == '__main__':
     main()
