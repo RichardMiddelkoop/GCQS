@@ -4,9 +4,9 @@ from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_cir
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
-POPULATION_SIZE = 50
+POPULATION_SIZE = 10
 # maximum number of generation the algorithm can run
-MAX_GENERATIONS = 50
+MAX_GENERATIONS = 20
 # mutation rate of a gene in the mutation phase
 # 0 < MUTATION_RATE < 1
 MUTATION_RATE = 0.20
@@ -108,8 +108,8 @@ def fitness(population):
         genome = individual.chromosome
         circuit = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
         configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
-        complexity, circuit_error = get_circuit_properties()
-        individual.fitness = 1/(1+complexity) * circuit_error
+        complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
+        individual.fitness = 1/(1+complexity) * 1/(1+circuit_error)
     
     return population
 
@@ -138,7 +138,7 @@ def main():
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
-        if generation % 50 == 0:
+        if generation % 5 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         if generation == MAX_GENERATIONS: 
             print("max gen reached!!")
