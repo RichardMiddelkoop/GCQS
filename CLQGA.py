@@ -147,7 +147,6 @@ def main():
     
     # if wanted, uncomment to see the final gate
     global NR_OF_QUBITS, NR_OF_GATES
-    circuit, _ = genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)
-    print(circuit)
+    print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES))
 if __name__ == '__main__':
     main()
