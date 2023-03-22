@@ -1,6 +1,6 @@
 import random
 import time
-from HelperCLQGA import genome_to_circuit
+from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -29,8 +29,9 @@ H = None
 # the initial quantum state used
 # TODO: generate the initial state
 INITIAL_STATE = None
-# the path to IBM chip csv
-CHIP_LAYOUT_PATH = None
+# the path to IBM chip
+CHIP_BACKEND = "ibm_perth"
+CHIP_BACKEND_SIMULATOR = "local_qasm_simulator"
 
 ## subtract the required information from the given path
 # TODO: build function in helper file that subtracts the required information 
@@ -96,7 +97,7 @@ def fitness(population):
     '''
     calculate fitness score
     '''
-    global H, INITIAL_STATE, CHIP_LAYOUT_PATH, NR_OF_QUBITS, NR_OF_GATES
+    global H, INITIAL_STATE, CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES
 
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
     #TODO: decide upon a maximum CNOT value allow within a circuit
@@ -105,8 +106,10 @@ def fitness(population):
 
     for individual in population:
         genome = individual.chromosome
-        circuit, complexity = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        individual.fitness = 1/(1+complexity)
+        circuit = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
+        configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
+        complexity, circuit_error = get_circuit_properties()
+        individual.fitness = 1/(1+complexity) * circuit_error
     
     return population
 

@@ -1,9 +1,11 @@
 from qiskit import QuantumCircuit
-from qiskit.circuit import Instruction
-from qiskit.circuit import CircuitInstruction
+import qiskit.circuit as qc
 from qiskit import QuantumRegister
+from qiskit_ibm_provider import IBMProvider
+from qiskit import transpile
 import numpy as np
 import math
+
 # TODO: possibly include more gates (like full layer gates)
 def gate_encoding(circuit, gene, nr_of_qubits, complexity):
     max_params = 3
@@ -125,3 +127,30 @@ def genome_to_circuit(genome, nr_of_qubits, nr_of_gates):
         gene = genome[i * gene_length : (i+1) * gene_length]
         circuit, total_complexity = gate_encoding(circuit, gene, nr_of_qubits, total_complexity)
     return circuit, total_complexity
+
+def configure_circuit_to_backend(circuit, backend):
+
+    provider = IBMProvider()
+    backend = provider.get_backend(backend)
+    circuit_basis = transpile(circuit, backend=backend)
+    return circuit_basis
+
+def get_circuit_properties(circuit, backend):
+    complexity = 0
+    circuit_error = 0
+    provider = IBMProvider()
+    backend = provider.get_backend(backend)
+    for gate in circuit.data:
+        if gate.operation.name == "cx":
+            cx_bits = [int(gate.qubits[0]._index), int(gate.qubits[1]._index)]
+            circuit_error += backend.properties().gate_error('cx',cx_bits)
+            complexity += 2
+
+
+
+    return complexity, circuit_error
+
+circuit, _ = genome_to_circuit("100011101111010010110000011010001101111101011000011101101100001011",5,6)
+
+a, b = get_circuit_properties(configure_circuit_to_backend(circuit, 'ibm_perth'), 'ibm_perth')
+print("complexity = ",a," circuit_error = ", b)
