@@ -4,7 +4,7 @@ from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_cir
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
-POPULATION_SIZE = 10
+POPULATION_SIZE = 20
 # maximum number of generation the algorithm can run
 MAX_GENERATIONS = 20
 # mutation rate of a gene in the mutation phase
@@ -59,6 +59,7 @@ def mutation(population):
     performs the mutation phase for a single generation phase, returns the mutated population
     '''
     global MUTATION_RATE, CHROMOSOME_LENGTH
+
     for individual in population:
         for sliceIndex, _ in enumerate(individual.chromosome):
             if random.uniform(0.0,1.0) <= MUTATION_RATE:
@@ -102,8 +103,6 @@ def fitness(population):
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
     #TODO: decide upon a maximum CNOT value allow within a circuit
     #TODO: calculate the energy/gradient of the circuit using the H and the initial state
-    #TODO: the calculation will use some sort of optimizer starting from initial parameter encoded in the genome, think hard about what to use and why you choose it
-
     for individual in population:
         genome = individual.chromosome
         circuit = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
@@ -120,21 +119,19 @@ def main():
     generation = 1
     found = False
     population = []
-
+    start = time.process_time()
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
+    population = fitness(population)
     #TODO: Include other stopping criteria if wanted/possible
     while not found:
 
-        if generation == 1:
-            # used to calculate expected runtime
-            start = time.process_time()
-        population = fitness(population)
         new_population = selection(population)
         new_population = combination(new_population, population)
         population = mutation(new_population)
+        population = fitness(population)
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
@@ -145,7 +142,7 @@ def main():
             found = True
         generation += 1
     
-    # if wanted, uncomment to see the final gate
+    # # if wanted, uncomment to see the final gate
     global NR_OF_QUBITS, NR_OF_GATES
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES))
 if __name__ == '__main__':
