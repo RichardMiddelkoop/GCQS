@@ -6,7 +6,7 @@ from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_cir
 # number of individuals in each generation
 POPULATION_SIZE = 20
 # maximum number of generation the algorithm can run
-MAX_GENERATIONS = 20
+MAX_GENERATIONS = 5
 # mutation rate of a gene in the mutation phase
 # 0 < MUTATION_RATE < 1
 MUTATION_RATE = 0.20
@@ -36,7 +36,9 @@ CHIP_BACKEND_SIMULATOR = "local_qasm_simulator"
 ## subtract the required information from the given path
 # TODO: build function in helper file that subtracts the required information 
 NR_OF_QUBITS = 5
+NR_OF_ISING_QUBITS = 4
 NR_OF_GATES = CIRCUIT_DEPTH
+NR_OF_SHOTS = 1024
 
 class Individual(object):
     '''
@@ -98,28 +100,27 @@ def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
-    global H, INITIAL_STATE, CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES
+    global H, INITIAL_STATE, CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
 
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
     #TODO: decide upon a maximum CNOT value allow within a circuit
     #TODO: calculate the energy/gradient of the circuit using the H and the initial state
     for individual in population:
         genome = individual.chromosome
-        circuit = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
+        circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
+        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS)
         configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
-        gradient = compute_gradient()
         
-
-        individual.fitness = 1/(1+complexity) * 1/(1+circuit_error)
+        individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
     
     return population
 
 def main():
-    global POPULATION_SIZE, MAX_GENERATIONS
+    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS
 
     # initialise parameters of the observable (1d ising model)
-    observable_h, observable_j = ising_1d_instance(4)
+    observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS)
 
     # initialisation of variables
     generation = 1
@@ -130,7 +131,7 @@ def main():
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
-    population = fitness(population)
+    population = fitness(population, observable_h, observable_j)
     #TODO: Include other stopping criteria if wanted/possible
     while not found:
 

@@ -2,6 +2,7 @@ from qiskit import QuantumCircuit
 import qiskit.circuit as qc
 from qiskit.circuit import Parameter
 from qiskit import QuantumRegister
+from qiskit import Aer
 from qiskit_ibm_provider import IBMProvider
 from qiskit import transpile
 import numpy as np
@@ -132,8 +133,9 @@ def genome_to_circuit(genome, nr_of_qubits, nr_of_gates):
     nr_of_parameters = 0
     for i in range(nr_of_gates):
         gene = genome[i * gene_length : (i+1) * gene_length]
-        circuit,nr_of_parameters = gate_encoding(circuit, gene, nr_of_qubits, nr_of_parameters)
-    return circuit
+        circuit, nr_of_parameters = gate_encoding(circuit, gene, nr_of_qubits, nr_of_parameters)
+
+    return circuit, nr_of_parameters
 
 def configure_circuit_to_backend(circuit, backend):
 
@@ -162,7 +164,6 @@ def compute_expected_energy(counts,h,j):
     def bool_to_state(integer):
         # Convert the 1/0 of a bit to +1/-1
         return 2*int(integer)-1
-
     # Get total energy of each count
     r1=list(counts.keys())
     r2=list(counts.values())
@@ -207,28 +208,32 @@ def add_measurement(circuit, qubits):
     return qc
 
 #TODO
-def energy_from_circuit(circuit, qubits):
-    meas_circuit =  add_measurement(circuit, qubits)
-    return
+def energy_from_circuit(circuit, qubits, h, j, shots=1024):
+    meas_circuit = add_measurement(circuit, qubits)
+    backend_sim = Aer.get_backend('qasm_simulator')
+    counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
+    
+    return compute_expected_energy(counts,h,j)
 
-def compute_gradient(circuit, parameter_length, h, j, shots=1024):
+def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
+    '''
+    symmetric gradient of the parameterised quantum circuit with fixed epsilon
+    '''
     #TODO: use the same epsilon as used by IC
     epsilon = 10**-3
     gradient = 0
     #TODO: add possible fixed random seed for experiment
     parameter_selection = np.random.random()* 2*math.pi
     parameters = [parameter_selection for _ in range(parameter_length)]
-
     for i,_ in enumerate(parameters):
+        grad_param = 0
         temp_parameters = parameters
         # Alpha-component of the gradient
         temp_parameters[i] += epsilon/2
-        grad_param = energy_from_circuit(circuit.bind_parameters(parameters))
+        grad_param += energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots)
         temp_parameters[i] -= epsilon
-        grad_param -= energy_from_circuit(circuit.bind_parameters(parameters))
+        grad_param -= energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots)
         grad_param /= epsilon
         gradient += grad_param
 
-    # compute_expected_energy(counts,h,j)
-
-    return gradient
+    return gradient, circuit.bind_parameters(parameters)
