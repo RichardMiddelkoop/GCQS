@@ -1,6 +1,6 @@
 import random
 import time
-from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties
+from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -94,7 +94,7 @@ def selection(parent_population):
     return children_population
     
 # ### The current fitness calculation is very simple 
-def fitness(population):
+def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
@@ -108,12 +108,18 @@ def fitness(population):
         circuit = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
         configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
+        gradient = compute_gradient()
+        
+
         individual.fitness = 1/(1+complexity) * 1/(1+circuit_error)
     
     return population
 
 def main():
     global POPULATION_SIZE, MAX_GENERATIONS
+
+    # initialise parameters of the observable (1d ising model)
+    observable_h, observable_j = ising_1d_instance(4)
 
     # initialisation of variables
     generation = 1
@@ -131,7 +137,7 @@ def main():
         new_population = selection(population)
         new_population = combination(new_population, population)
         population = mutation(new_population)
-        population = fitness(population)
+        population = fitness(population, observable_h, observable_j)
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
