@@ -9,7 +9,7 @@ import numpy as np
 import math
 import random
 
-# TODO: possibly include more gates (like full layer gates)
+SET_SEED = None
 def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     # first six bits of string define gate time, rest define which qubits to apply to
     gate_string = gene[:6]
@@ -19,7 +19,6 @@ def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     qubit_string = gene[6:]
     qubit_seed = int(qubit_string, 2)
     qubits = np.random.RandomState(seed=qubit_seed).permutation(nr_of_qubits)
-    # TODO: decide on the parameter initialisation
 
     ## Single Qubit gates
     if gate_string == "000000":
@@ -168,17 +167,13 @@ def compute_expected_energy(counts,h,j):
     r1=list(counts.keys())
     r2=list(counts.values())
     total_energy = 0
-
     for k in range(0,len(r1)):
         # r2[k] is the number of shots that have this result
         # r1[k] is the result as qubits (like 0001)
-        
         # Energy of h
-        for bit_h in range(0,len(r1[k])):
-            total_energy += bool_to_state(r1[k][bit_h]) * h[bit_h]*r2[k]
+        total_energy += sum([bool_to_state(r1[k][bit_value])*h[bit_value] for bit_value in range(0,len(r1[k]))])*r2[k]
         # Energy of j
-        for bit_value in range(0,len(r1[k])-1):
-            total_energy += bool_to_state(r1[k][bit_value])*bool_to_state(r1[k][bit_value+1])*j[bit_value]*r2[k]
+        total_energy += sum([bool_to_state(r1[k][bit_value])*bool_to_state(r1[k][bit_value+1])*j[bit_value] for bit_value in range(0,len(j))])*r2[k]
     # Divide over the total count(shots)
     expectation_value = total_energy/sum(r2)
     return expectation_value
@@ -212,7 +207,6 @@ def energy_from_circuit(circuit, qubits, h, j, shots=1024):
     meas_circuit = add_measurement(circuit, qubits)
     backend_sim = Aer.get_backend('qasm_simulator')
     counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
-    
     return compute_expected_energy(counts,h,j)
 
 def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
@@ -220,11 +214,12 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
     symmetric gradient of the parameterised quantum circuit with fixed epsilon
     '''
     #TODO: use the same epsilon as used by IC
+    global SET_SEED
     epsilon = 10**-3
     gradient = 0
-    #TODO: add possible fixed random seed for experiment
-    parameter_selection = np.random.random()* 2*math.pi
-    parameters = [parameter_selection for _ in range(parameter_length)]
+    np.random.seed(SET_SEED)
+    parameters = [np.random.random()* 2*math.pi for _ in range(parameter_length)]
+
     for i,_ in enumerate(parameters):
         grad_param = 0
         temp_parameters = parameters
@@ -235,5 +230,4 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
         grad_param -= energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots)
         grad_param /= epsilon
         gradient += grad_param
-
-    return gradient, circuit.bind_parameters(parameters)
+    return abs(gradient), circuit.bind_parameters(parameters)
