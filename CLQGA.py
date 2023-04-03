@@ -43,9 +43,9 @@ def read_arg_string_from_file(parameter_file):
         arg_dict[param] = value
     return arg_dict
 
-def arg_string_to_dict(arg_string):
+def arg_string_to_dict(arg_string, dict):
     arg_lines = arg_string.split(",")
-    arg_dict = {}
+    arg_dict = dict
     for arg_line in arg_lines:
         param = arg_line[:arg_line.find("=")].strip()
         value = arg_line[arg_line.find("=")+1:].strip()
@@ -54,10 +54,11 @@ def arg_string_to_dict(arg_string):
 
 def assign_parameters(parameter_file, arg_string):
     global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, CIRCUIT_DEPTH, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS
+    arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
     else:
-        arg_dict = arg_string_to_dict(arg_string)
+        arg_dict = arg_string_to_dict(arg_string, arg_dict)
     for argument in arg_dict:
         if argument == "POPULATION_SIZE":
             POPULATION_SIZE = int(arg_dict[argument])
@@ -140,6 +141,9 @@ def selection(parent_population):
     global ELITISM_RATE
 
     parent_population = sorted(parent_population, key=lambda individual: individual.fitness, reverse=True)
+    print("population sorted!!")
+    for kid in parent_population:
+        print("Child, ",kid.fitness)
     cut_off = int(ELITISM_RATE*len(parent_population))
     children_population = parent_population[:cut_off]
 
@@ -176,7 +180,7 @@ def main():
     generation = 1
     found = False
     population = []
-    start = time.process_time()
+    start = time.perf_counter()
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
@@ -191,7 +195,7 @@ def main():
         population = fitness(population, observable_h, observable_j)
         if generation == 1:
             # print expected runtime 
-            print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.process_time() - start)*MAX_GENERATIONS))))
+            print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
         if generation % 5 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
         if generation == MAX_GENERATIONS: 
@@ -208,15 +212,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--arguments', required=False, help="Input the parameters to use for the algorithm, either input the name of a textfile(\".txt\"!) located in the same textfolder as the algorithm OR input a \",\" string listing the parameters that you want changed, like \"param1=5,param2=3,...\"")
     args = parser.parse_args()
+    parameter_file = "default_parameters.txt"
     if args.arguments:
         if args.arguments[len(args.arguments)-4:] == ".txt": 
             parameter_file = args.arguments
             arg_string = None
         else: 
-            parameter_file = None
             arg_string = args.arguments
     else: 
-        parameter_file = "default_parameters.txt"
         arg_string = None
     assign_parameters(parameter_file, arg_string)
     main()

@@ -137,7 +137,6 @@ def genome_to_circuit(genome, nr_of_qubits, nr_of_gates):
     return circuit, nr_of_parameters
 
 def configure_circuit_to_backend(circuit, backend):
-
     provider = IBMProvider()
     backend = provider.get_backend(backend)
     circuit_basis = transpile(circuit, backend=backend)
