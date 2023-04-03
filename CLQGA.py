@@ -15,13 +15,13 @@ MUTATION_RATE = 0.20
 # 0 < ELITISM_RATE < 1
 ELITISM_RATE = 0.10
 # number of layers in the ansatz
-CIRCUIT_DEPTH = 6
+NR_OF_GATES = 6
 # the encoding of the circuit takes 11 bits for each circuit layer
 # do not change unless the encoding of gates has changed!
 GATE_ENCODING_LENGTH = 6 
 # nr of qubits in the system
 QUBIT_SECTIONING_LENGTH = 5
-CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
 
 # the path to IBM chip
 CHIP_BACKEND = "ibm_perth"
@@ -30,8 +30,8 @@ CHIP_BACKEND_SIMULATOR = "local_qasm_simulator"
 ## subtract the required information from the given path
 NR_OF_QUBITS = 5
 NR_OF_ISING_QUBITS = 4
-NR_OF_GATES = CIRCUIT_DEPTH
 NR_OF_SHOTS = 1024
+IMPROVEMENT_CRITERIA = 0.02
 
 def read_arg_string_from_file(parameter_file):
     arg_file = open(parameter_file, 'r')
@@ -53,7 +53,7 @@ def arg_string_to_dict(arg_string, dict):
     return arg_dict
 
 def assign_parameters(parameter_file, arg_string):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, CIRCUIT_DEPTH, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -68,15 +68,14 @@ def assign_parameters(parameter_file, arg_string):
             MUTATION_RATE = float(arg_dict[argument])
         elif argument == "ELITISM_RATE":
             ELITISM_RATE = float(arg_dict[argument])
-        elif argument == "CIRCUIT_DEPTH":
-            CIRCUIT_DEPTH = int(arg_dict[argument])
-            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+        elif argument == "IMPROVEMENT_CRITERIA":
+            IMPROVEMENT_CRITERIA = float(arg_dict[argument])
         elif argument == "GATE_ENCODING_LENGTH":
             GATE_ENCODING_LENGTH = int(arg_dict[argument])
-            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+            CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
         elif argument == "QUBIT_SECTIONING_LENGTH":
             QUBIT_SECTIONING_LENGTH = int(arg_dict[argument])
-            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+            CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
         elif argument == "CHIP_BACKEND":
             CHIP_BACKEND = arg_dict[argument]
         elif argument == "CHIP_BACKEND_SIMULATOR":
@@ -150,9 +149,7 @@ def fitness(population, observable_h, observable_j):
     calculate fitness score
     '''
     global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
-    #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
-    #TODO: decide upon a maximum CNOT value allow within a circuit
-    #TODO: calculate the energy/gradient of the circuit using the H and the initial state
+
     for individual in population:
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
@@ -166,7 +163,7 @@ def fitness(population, observable_h, observable_j):
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
 def main():
-    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS
+    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA
 
     # initialise parameters of the observable (1d ising model)
     observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS)
@@ -175,28 +172,35 @@ def main():
     generation = 1
     found = False
     population = []
-    start = time.perf_counter()
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
     population = fitness(population, observable_h, observable_j)
     population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
+    average_fitness = []
     #TODO: Include stopping criteria based on improvement
     while not found:
-
+        start = time.perf_counter()
         new_population = selection(population)
         new_population = combination(new_population, population)
         population = mutation(new_population)
         population = fitness(population, observable_h, observable_j)
-
+        average_fitness.append(population[0].fitness)
+        if len(average_fitness) > 40:
+            average_fitness.pop(0)
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
-        if generation % 5 == 0:
-            print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,population[0].fitness))
+        if generation % 50 == 0:
+            print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
         if generation == MAX_GENERATIONS: 
             print("max gen reached!!")
+            found = True
+        #(New-Old)/Old to check if there are still improvements in the fitness of the population
+        if abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/sum(average_fitness[int(len(average_fitness)/2):]))<IMPROVEMENT_CRITERIA:
+            print("improvement threshold breached!")
+            # print("total diff, ",abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/sum(average_fitness[int(len(average_fitness)/2):])))
             found = True
         generation += 1
     
