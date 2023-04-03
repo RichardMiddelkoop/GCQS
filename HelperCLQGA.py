@@ -8,7 +8,7 @@ from qiskit import transpile
 import numpy as np
 import math
 import random
-
+#TODO: use all global parameters from the main folder
 SET_SEED = None
 def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     # first six bits of string define gate time, rest define which qubits to apply to
@@ -147,14 +147,19 @@ def get_circuit_properties(circuit, backend):
     complexity = 0
     circuit_error = 0
     provider = IBMProvider()
-    backend = provider.get_backend(backend)
+    if type(backend) == str:
+        IBMbackend = provider.get_backend(backend)
+    else:
+        IBMbackend = backend
     for gate in circuit.data:
         if "c" in gate.operation.name:
             cx_bits = [int(gate.qubits[0]._index), int(gate.qubits[1]._index)]
-            circuit_error += backend.properties().gate_error(gate.operation.name,cx_bits)
+            circuit_error += IBMbackend.properties().gate_error(gate.operation.name,cx_bits)
             complexity += 2
-
-    return complexity, circuit_error
+    # If a simulator is used the manual complexity value is used, otherwise the actual 2-bit circuit error is used
+    if not circuit_error == 0:
+        complexity = 0
+    return complexity, circuit_error, IBMbackend
 
 def compute_expected_energy(counts,h,j):
     '''
@@ -202,7 +207,7 @@ def add_measurement(circuit, qubits):
     qc = circuit.compose(meas)
     return qc
 
-#TODO
+#TODO: allow for different backend
 def energy_from_circuit(circuit, qubits, h, j, shots=1024):
     meas_circuit = add_measurement(circuit, qubits)
     backend_sim = Aer.get_backend('qasm_simulator')

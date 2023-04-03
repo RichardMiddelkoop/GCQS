@@ -7,7 +7,7 @@ from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_cir
 # number of individuals in each generation
 POPULATION_SIZE = 20
 # maximum number of generation the algorithm can run
-MAX_GENERATIONS = 5
+MAX_GENERATIONS = 20
 # mutation rate of a gene in the mutation phase
 # 0 < MUTATION_RATE < 1
 MUTATION_RATE = 0.20
@@ -23,23 +23,72 @@ GATE_ENCODING_LENGTH = 6
 QUBIT_SECTIONING_LENGTH = 5
 CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
 
-#TODO: implement these steps
-# the hamiltonian used as observable
-# TODO: choose a hamiltonian to use
-H = None
-# the initial quantum state used
-# TODO: generate the initial state
-INITIAL_STATE = None
 # the path to IBM chip
 CHIP_BACKEND = "ibm_perth"
 CHIP_BACKEND_SIMULATOR = "local_qasm_simulator"
 
 ## subtract the required information from the given path
-# TODO: build function in helper file that subtracts the required information 
 NR_OF_QUBITS = 5
 NR_OF_ISING_QUBITS = 4
 NR_OF_GATES = CIRCUIT_DEPTH
 NR_OF_SHOTS = 1024
+
+def read_arg_string_from_file(parameter_file):
+    arg_file = open(parameter_file, 'r')
+    arg_lines = arg_file.readlines()
+    arg_dict = {}
+    for arg_line in arg_lines:
+        param = arg_line[:arg_line.find("=")].strip()
+        value = arg_line[arg_line.find("=")+1:].strip()
+        arg_dict[param] = value
+    return arg_dict
+
+def arg_string_to_dict(arg_string):
+    arg_lines = arg_string.split(",")
+    arg_dict = {}
+    for arg_line in arg_lines:
+        param = arg_line[:arg_line.find("=")].strip()
+        value = arg_line[arg_line.find("=")+1:].strip()
+        arg_dict[param] = value
+    return arg_dict
+
+def assign_parameters(parameter_file, arg_string):
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, CIRCUIT_DEPTH, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS
+    if not(parameter_file == None):
+        arg_dict = read_arg_string_from_file(parameter_file)
+    else:
+        arg_dict = arg_string_to_dict(arg_string)
+    for argument in arg_dict:
+        if argument == "POPULATION_SIZE":
+            POPULATION_SIZE = int(arg_dict[argument])
+        elif argument == "MAX_GENERATIONS":
+            MAX_GENERATIONS = int(arg_dict[argument])
+        elif argument == "MUTATION_RATE":
+            MUTATION_RATE = float(arg_dict[argument])
+        elif argument == "ELITISM_RATE":
+            ELITISM_RATE = float(arg_dict[argument])
+        elif argument == "CIRCUIT_DEPTH":
+            CIRCUIT_DEPTH = int(arg_dict[argument])
+            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+        elif argument == "GATE_ENCODING_LENGTH":
+            GATE_ENCODING_LENGTH = int(arg_dict[argument])
+            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+        elif argument == "QUBIT_SECTIONING_LENGTH":
+            QUBIT_SECTIONING_LENGTH = int(arg_dict[argument])
+            CHROMOSOME_LENGTH = CIRCUIT_DEPTH * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+        elif argument == "CHIP_BACKEND":
+            CHIP_BACKEND = arg_dict[argument]
+        elif argument == "CHIP_BACKEND_SIMULATOR":
+            CHIP_BACKEND_SIMULATOR = arg_dict[argument]
+        elif argument == "NR_OF_QUBITS":
+            NR_OF_QUBITS = int(arg_dict[argument])
+        elif argument == "NR_OF_ISING_QUBITS":
+            NR_OF_ISING_QUBITS = int(arg_dict[argument])
+        elif argument == "NR_OF_SHOTS":
+            NR_OF_SHOTS = int(arg_dict[argument])
+    return
+
+
 
 class Individual(object):
     '''
@@ -101,8 +150,9 @@ def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
-    global H, INITIAL_STATE, CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
-
+    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
+    # This stops repeated queries to IBM for the circuit properties
+    backend = CHIP_BACKEND
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
     #TODO: decide upon a maximum CNOT value allow within a circuit
     #TODO: calculate the energy/gradient of the circuit using the H and the initial state
@@ -111,8 +161,7 @@ def fitness(population, observable_h, observable_j):
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
         gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS)
         configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
-        complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
-        
+        complexity, circuit_error, backend = get_circuit_properties(configured_circuit, backend)
         individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
     
     return population
@@ -133,7 +182,7 @@ def main():
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
     population = fitness(population, observable_h, observable_j)
-    #TODO: Include other stopping criteria if wanted/possible
+    #TODO: Include stopping criteria based on improvement
     while not found:
 
         new_population = selection(population)
@@ -152,20 +201,22 @@ def main():
     
     # # if wanted, uncomment to see the final gate
     global NR_OF_QUBITS, NR_OF_GATES
-    print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES))
+    print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--arguments', required=False)
+    parser.add_argument('--arguments', required=False, help="Input the parameters to use for the algorithm, either input the name of a textfile(\".txt\"!) located in the same textfolder as the algorithm OR input a \",\" string listing the parameters that you want changed, like \"param1=5,param2=3,...\"")
     args = parser.parse_args()
     if args.arguments:
         if args.arguments[len(args.arguments)-4:] == ".txt": 
             parameter_file = args.arguments
             arg_string = None
         else: 
+            parameter_file = None
             arg_string = args.arguments
     else: 
         parameter_file = "default_parameters.txt"
         arg_string = None
-    print(args.arguments)
-    exit()
+    assign_parameters(parameter_file, arg_string)
     main()
