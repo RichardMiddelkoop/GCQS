@@ -139,11 +139,6 @@ def selection(parent_population):
     perform selection using elitism, returns initial children_population
     '''
     global ELITISM_RATE
-
-    parent_population = sorted(parent_population, key=lambda individual: individual.fitness, reverse=True)
-    print("population sorted!!")
-    for kid in parent_population:
-        print("Child, ",kid.fitness)
     cut_off = int(ELITISM_RATE*len(parent_population))
     children_population = parent_population[:cut_off]
 
@@ -155,8 +150,6 @@ def fitness(population, observable_h, observable_j):
     calculate fitness score
     '''
     global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
-    # This stops repeated queries to IBM for the circuit properties
-    backend = CHIP_BACKEND
     #TODO: calculate the complexity value of both the circuit and added complexity due to the required changes of the circuit given the chip layout.
     #TODO: decide upon a maximum CNOT value allow within a circuit
     #TODO: calculate the energy/gradient of the circuit using the H and the initial state
@@ -164,11 +157,13 @@ def fitness(population, observable_h, observable_j):
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
         gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS)
-        configured_circuit = configure_circuit_to_backend(circuit, CHIP_BACKEND)
-        complexity, circuit_error, backend = get_circuit_properties(configured_circuit, backend)
+        configured_circuit, backend = configure_circuit_to_backend(circuit, CHIP_BACKEND)
+        if not type(backend) == str:
+            CHIP_BACKEND = backend
+        complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
         individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
-    
-    return population
+
+    return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
 def main():
     global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS
@@ -186,6 +181,7 @@ def main():
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
     population = fitness(population, observable_h, observable_j)
+    population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
     #TODO: Include stopping criteria based on improvement
     while not found:
 
@@ -193,6 +189,7 @@ def main():
         new_population = combination(new_population, population)
         population = mutation(new_population)
         population = fitness(population, observable_h, observable_j)
+
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))

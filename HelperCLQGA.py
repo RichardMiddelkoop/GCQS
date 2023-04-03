@@ -137,17 +137,28 @@ def genome_to_circuit(genome, nr_of_qubits, nr_of_gates):
     return circuit, nr_of_parameters
 
 def configure_circuit_to_backend(circuit, backend):
-    provider = IBMProvider()
-    backend = provider.get_backend(backend)
+    if type(backend) == str:
+        provider = IBMProvider()
+        available_cloud_backends = provider.backends()
+        for i in available_cloud_backends: 
+            if i.name == backend:
+                backend = i
+        if type(backend) == str:
+            exit("the given backend is not available, exiting the system")
     circuit_basis = transpile(circuit, backend=backend)
-    return circuit_basis
+    return circuit_basis, backend
 
 def get_circuit_properties(circuit, backend):
     complexity = 0
     circuit_error = 0
-    provider = IBMProvider()
     if type(backend) == str:
-        IBMbackend = provider.get_backend(backend)
+        provider = IBMProvider()
+        available_cloud_backends = provider.backends()
+        for i in available_cloud_backends: 
+            if i.name == backend:
+                backend = i
+        if type(backend) == str:
+            exit("the given backend is not available, exiting the system")
     else:
         IBMbackend = backend
     for gate in circuit.data:
@@ -158,7 +169,7 @@ def get_circuit_properties(circuit, backend):
     # If a simulator is used the manual complexity value is used, otherwise the actual 2-bit circuit error is used
     if not circuit_error == 0:
         complexity = 0
-    return complexity, circuit_error, IBMbackend
+    return complexity, circuit_error
 
 def compute_expected_energy(counts,h,j):
     '''
