@@ -1,5 +1,6 @@
 import random
 import time
+import argparse
 from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient
 
 ## parameters for the algorithm ##
@@ -153,4 +154,18 @@ def main():
     global NR_OF_QUBITS, NR_OF_GATES
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES))
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--arguments', required=False)
+    args = parser.parse_args()
+    if args.arguments:
+        if args.arguments[len(args.arguments)-4:] == ".txt": 
+            parameter_file = args.arguments
+            arg_string = None
+        else: 
+            arg_string = args.arguments
+    else: 
+        parameter_file = "default_parameters.txt"
+        arg_string = None
+    print(args.arguments)
+    exit()
     main()
