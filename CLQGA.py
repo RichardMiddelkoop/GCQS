@@ -148,12 +148,11 @@ def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
-    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS
-
+    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR
     for individual in population:
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS)
+        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR)
         configured_circuit, backend = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         if not type(backend) == str:
             CHIP_BACKEND = backend
@@ -198,7 +197,7 @@ def main():
             print("max gen reached!!")
             found = True
         #(New-Old)/Old to check if there are still improvements in the fitness of the population
-        if abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/sum(average_fitness[int(len(average_fitness)/2):]))<IMPROVEMENT_CRITERIA:
+        if abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/(sum(average_fitness[int(len(average_fitness)/2):])+1))<IMPROVEMENT_CRITERIA:
             print("improvement threshold breached!")
             # print("total diff, ",abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/sum(average_fitness[int(len(average_fitness)/2):])))
             found = True

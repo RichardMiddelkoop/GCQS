@@ -1,10 +1,11 @@
 from qiskit import QuantumCircuit
-import qiskit.circuit as qc
 from qiskit.circuit import Parameter
 from qiskit import QuantumRegister
 from qiskit import Aer
 from qiskit_ibm_provider import IBMProvider
 from qiskit import transpile
+from qiskit.providers.fake_provider import FakeProviderForBackendV2
+from qiskit.providers import aer
 import numpy as np
 import math
 import random
@@ -136,7 +137,7 @@ def genome_to_circuit(genome, nr_of_qubits, nr_of_gates):
 
     return circuit, nr_of_parameters
 
-def configure_circuit_to_backend(circuit, backend):
+def find_backend(backend):
     if type(backend) == str:
         provider = IBMProvider()
         available_cloud_backends = provider.backends()
@@ -144,23 +145,26 @@ def configure_circuit_to_backend(circuit, backend):
             if i.name == backend:
                 backend = i
         if type(backend) == str:
-            exit("the given backend is not available, exiting the system")
-    circuit_basis = transpile(circuit, backend=backend)
-    return circuit_basis, backend
+            provider = FakeProviderForBackendV2()
+            available_cloud_backends = provider.backends()
+            for i in available_cloud_backends: 
+                if i.name == backend:
+                    backend = i
+            if type(backend) == str:
+                exit("the given backend is not available, exiting the system")
+    return backend
+
+def configure_circuit_to_backend(circuit, backend):
+    IBMbackend = find_backend(backend)
+    circuit_basis = transpile(circuit, backend=IBMbackend)
+    return circuit_basis, IBMbackend
 
 def get_circuit_properties(circuit, backend):
     complexity = 0
     circuit_error = 0
-    if type(backend) == str:
-        provider = IBMProvider()
-        available_cloud_backends = provider.backends()
-        for i in available_cloud_backends: 
-            if i.name == backend:
-                backend = i
-        if type(backend) == str:
-            exit("the given backend is not available, exiting the system")
-    else:
-        IBMbackend = backend
+    IBMbackend = find_backend(backend)
+    if "fake" in IBMbackend.name:
+        IBMbackend = aer.AerSimulator.from_backend(IBMbackend)
     for gate in circuit.data:
         if "c" in gate.operation.name:
             cx_bits = [int(gate.qubits[0]._index), int(gate.qubits[1]._index)]
@@ -217,14 +221,16 @@ def add_measurement(circuit, qubits):
     qc = circuit.compose(meas)
     return qc
 
-#TODO: allow for different backend
-def energy_from_circuit(circuit, qubits, h, j, shots=1024):
+def energy_from_circuit(circuit, qubits, h, j, shots, backend_simulator):
     meas_circuit = add_measurement(circuit, qubits)
-    backend_sim = Aer.get_backend('qasm_simulator')
+    try:
+        backend_sim = aer.AerSimulator.from_backend(backend_simulator)
+    except:
+        backend_sim = Aer.get_backend('qasm_simulator')
     counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
     return compute_expected_energy(counts,h,j)
 
-def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
+def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator):
     '''
     symmetric gradient of the parameterised quantum circuit with fixed epsilon
     '''
@@ -240,9 +246,9 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots=1024):
         temp_parameters = parameters
         # Alpha-component of the gradient
         temp_parameters[i] += epsilon/2
-        grad_param += energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots)
+        grad_param += energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots, backend_simulator)
         temp_parameters[i] -= epsilon
-        grad_param -= energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots)
+        grad_param -= energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots, backend_simulator)
         grad_param /= epsilon
         gradient += grad_param
     return abs(gradient), circuit.bind_parameters(parameters)
