@@ -176,6 +176,7 @@ def main():
     generation = 1
     found = False
     population = []
+
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
@@ -183,7 +184,7 @@ def main():
     population = fitness(population, observable_h, observable_j)
     population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
     average_fitness = []
-    #TODO: Include stopping criteria based on improvement
+
     while not found:
         start = time.perf_counter()
         new_population = selection(population)
@@ -193,18 +194,21 @@ def main():
         average_fitness.append(population[0].fitness)
         if len(average_fitness) > 40:
             average_fitness.pop(0)
+
+        # print statements during processing
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
         if generation % 50 == 0:
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
+        
+        # stopping criteria
         if generation == MAX_GENERATIONS: 
             print("max gen reached!!")
             found = True
-        #(New-Old)/Old to check if there are still improvements in the fitness of the population
+        ## (New-Old)/Old to check if there are still improvements in the fitness of the population
         if abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/(sum(average_fitness[int(len(average_fitness)/2):])+1))<IMPROVEMENT_CRITERIA:
             print("improvement threshold breached!")
-            # print("total diff, ",abs((sum(average_fitness[int(len(average_fitness)/2):]) - sum(average_fitness[:int(len(average_fitness)/2)]))/sum(average_fitness[int(len(average_fitness)/2):])))
             found = True
         generation += 1
     
