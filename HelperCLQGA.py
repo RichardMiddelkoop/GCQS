@@ -250,3 +250,11 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
         grad_param /= epsilon
         gradient += grad_param
     return abs(gradient), circuit.bind_parameters(parameters)
+
+def calculate_crowd_distance(elitism_population, individual):
+    match_percentage = []
+    def match(subject_1,subject_2):
+        return sum([int(subject_1[i] == subject_2[i]) for i in range(0,len(subject_1))])/len(subject_1)
+    for elite in elitism_population:
+        match_percentage.append(match(individual.chromosome,elite.chromosome))
+    return 1-(sum(match_percentage)/len(match_percentage))

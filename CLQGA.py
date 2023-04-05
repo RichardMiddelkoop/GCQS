@@ -1,7 +1,7 @@
 import random
 import time
 import argparse
-from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient
+from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient, calculate_crowd_distance
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -24,6 +24,7 @@ QUBIT_SECTIONING_LENGTH = 5
 CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
 # seed used for the randomiser
 RANDOM_SEED = None
+MODIFIED_UNIFORM_CROSSOVER = False
 
 # the path to IBM chip
 CHIP_BACKEND = "ibm_perth"
@@ -55,7 +56,7 @@ def arg_string_to_dict(arg_string, dict):
     return arg_dict
 
 def assign_parameters(parameter_file, arg_string):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -91,6 +92,8 @@ def assign_parameters(parameter_file, arg_string):
         elif argument == "RANDOM_SEED":
             if not arg_dict[argument] == "None":
                 RANDOM_SEED = int(arg_dict[argument])
+        elif argument == "MODIFIED_UNIFORM_CROSSOVER":
+            MODIFIED_UNIFORM_CROSSOVER = (arg_dict[argument]=="True")
     return
 
 
@@ -129,13 +132,36 @@ def combination(children_population, parent_population):
     '''
     perform mating and produce new offspring
     '''
-    global CHROMOSOME_LENGTH, RANDOM_SEED
-    random.seed(RANDOM_SEED)
+    global CHROMOSOME_LENGTH, MODIFIED_UNIFORM_CROSSOVER
+    elitism_population = children_population
+    
     for _ in range( int((len(parent_population) - len(children_population))/2)):
         parents = random.sample(parent_population, 2)
-        slice = random.randint(0,CHROMOSOME_LENGTH)
-        children_population.append(Individual(parents[0].chromosome[:slice]+parents[1].chromosome[slice:]))
-        children_population.append(Individual(parents[1].chromosome[:slice]+parents[0].chromosome[slice:]))
+        chromosome_child_0 = ""
+        chromosome_child_1 = ""
+        
+        if MODIFIED_UNIFORM_CROSSOVER:
+            for i in range(0,CHROMOSOME_LENGTH):
+                # modified uniform random, higher crowd distance results in less swapping
+                swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
+                if random.random() < swap_chance:
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        else:
+            for i in range(0,CHROMOSOME_LENGTH):
+                if random.randint(0,1):
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        children_population.append(Individual(chromosome_child_0))
+        children_population.append(Individual(chromosome_child_1))
 
     return children_population
 
