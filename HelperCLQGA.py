@@ -9,8 +9,7 @@ from qiskit.providers import aer
 import numpy as np
 import math
 import random
-#TODO: use all global parameters from the main folder
-SET_SEED = None
+
 def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     # first six bits of string define gate time, rest define which qubits to apply to
     gate_string = gene[:6]
@@ -197,9 +196,9 @@ def compute_expected_energy(counts,h,j):
     expectation_value = total_energy/sum(r2)
     return expectation_value
 
-#TODO: add option to fix random seed!
-def ising_1d_instance(qubits):
+def ising_1d_instance(qubits, seed):
     def rand1d(qubits):
+        np.random.seed(seed)
         return [random.choice([+1, -1]) for _ in range(qubits)]
 
     # transverse field terms
@@ -230,15 +229,14 @@ def energy_from_circuit(circuit, qubits, h, j, shots, backend_simulator):
     counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
     return compute_expected_energy(counts,h,j)
 
-def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator):
+def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator, seed):
     '''
     symmetric gradient of the parameterised quantum circuit with fixed epsilon
     '''
     #TODO: use the same epsilon as used by IC
-    global SET_SEED
     epsilon = 10**-3
     gradient = 0
-    np.random.seed(SET_SEED)
+    np.random.seed(seed)
     parameters = [np.random.random()* 2*math.pi for _ in range(parameter_length)]
 
     for i,_ in enumerate(parameters):

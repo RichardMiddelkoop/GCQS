@@ -22,6 +22,8 @@ GATE_ENCODING_LENGTH = 6
 # nr of qubits in the system
 QUBIT_SECTIONING_LENGTH = 5
 CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
+# seed used for the randomiser
+RANDOM_SEED = None
 
 # the path to IBM chip
 CHIP_BACKEND = "ibm_perth"
@@ -53,7 +55,7 @@ def arg_string_to_dict(arg_string, dict):
     return arg_dict
 
 def assign_parameters(parameter_file, arg_string):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -86,6 +88,9 @@ def assign_parameters(parameter_file, arg_string):
             NR_OF_ISING_QUBITS = int(arg_dict[argument])
         elif argument == "NR_OF_SHOTS":
             NR_OF_SHOTS = int(arg_dict[argument])
+        elif argument == "RANDOM_SEED":
+            if not arg_dict[argument] == "None":
+                RANDOM_SEED = int(arg_dict[argument])
     return
 
 
@@ -148,11 +153,11 @@ def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
-    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR
+    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED
     for individual in population:
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR)
+        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED)
         configured_circuit, backend = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         if not type(backend) == str:
             CHIP_BACKEND = backend
@@ -162,10 +167,10 @@ def fitness(population, observable_h, observable_j):
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
 def main():
-    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA
+    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA, SEED
 
     # initialise parameters of the observable (1d ising model)
-    observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS)
+    observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS, RANDOM_SEED)
 
     # initialisation of variables
     generation = 1
