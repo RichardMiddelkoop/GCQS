@@ -108,15 +108,16 @@ class Individual(object):
         '''
         create chromosome representing quantum circuit
         '''
-        global CHROMOSOME_LENGTH
+        global CHROMOSOME_LENGTH, RANDOM_SEED
+        random.seed(RANDOM_SEED)
         return ''.join(str(random.randint(0,1)) for _ in range(CHROMOSOME_LENGTH))
 
 def mutation(population):
     '''
     performs the mutation phase for a single generation phase, returns the mutated population
     '''
-    global MUTATION_RATE, CHROMOSOME_LENGTH
-
+    global MUTATION_RATE, CHROMOSOME_LENGTH, RANDOM_SEED
+    random.seed(RANDOM_SEED)
     for individual in population:
         for sliceIndex, _ in enumerate(individual.chromosome):
             if random.uniform(0.0,1.0) <= MUTATION_RATE:
@@ -128,8 +129,8 @@ def combination(children_population, parent_population):
     '''
     perform mating and produce new offspring
     '''
-    global CHROMOSOME_LENGTH
-
+    global CHROMOSOME_LENGTH, RANDOM_SEED
+    random.seed(RANDOM_SEED)
     for _ in range( int((len(parent_population) - len(children_population))/2)):
         parents = random.sample(parent_population, 2)
         slice = random.randint(0,CHROMOSOME_LENGTH)
