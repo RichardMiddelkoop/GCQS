@@ -1,58 +1,37 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import numpy as np
-import time
+import pickle
+import subprocess
 
-from experiments.HelperExperiments import LearningCurvePlot, smooth
-
-def average_over_repetitions(backup, n_repetitions, n_timesteps, policy='egreedy', smoothing_window=51):
-
-    reward_results = np.empty([n_repetitions,n_timesteps]) # Result array
-    now = time.time()
-
-
-    for rep in range(n_repetitions): # Loop over repetitions
-        if backup == 'DQN':
-            rewards = dqn(False, False, (policy != 'egreedy'), n_timesteps)
-        elif backup == 'DQN-TN':
-            rewards = dqn(False, True, (policy != 'egreedy'), n_timesteps)
-        elif backup == 'DQN-EP-TN':
-            rewards = dqn(True, True, (policy != 'egreedy'), n_timesteps)
-
-        reward_results[rep] = rewards
-        
-    print('Running one setting takes {} minutes'.format((time.time()-now)/60))    
-    learning_curve = np.mean(reward_results,axis=0) # average over repetitions
-    learning_curve = smooth(learning_curve,smoothing_window) # additional smoothing
-    return learning_curve  
+def saveLoad(opt,pickleName, object):
+    '''opt "save" or "load"'''
+    save = None
+    if opt == "save":
+        f = open(pickleName, 'wb')
+        pickle.dump(object, f)
+        f.close()
+        print('data saved')
+    elif opt == "load":
+        f = open(pickleName, 'rb')
+        save = pickle.load(f)
+        f.close()
+    else:
+        print('Invalid saveLoad option')
+    return save
 
 def experiment():
     ####### Settings
     # Experiment    
-    n_repetitions = 2
-    smoothing_window = 1001 
-    n_timesteps = 25000
-    # Exploration
-    policy = 'egreedy' # 'egreedy' or 'softmax' 
-    backup = 'DQN' # 'DQN' or 'DQN-ER' or 'DQN-TN' or 'DQN-ER-TN'
-        
-    # Plotting parameters
-    plot = False
+    parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10"]
+    input = "python3 ./CLQGA.py --arguments "
+    pickle_name = "experiment_6_april"
     
     ####### Experiments
-    #### Ablation Study
-    Plot = LearningCurvePlot(title = 'Deep Q-learning: effect of experience replay and a target network')    
-    policy = 'egreedy'
-    backups = ['DQN','DQN-TN','DQN-EP-TN']
-    for backup in backups:        
-        learning_curve = average_over_repetitions(backup, n_repetitions, n_timesteps, policy, smoothing_window)
-        Plot.add_curve(learning_curve,label=r'Model {} using policy {}'.format(backup,policy))    
-    policy = 'softmax'
-    for backup in backups:
-        learning_curve = average_over_repetitions(backup, n_repetitions, n_timesteps, policy, smoothing_window)
-        Plot.add_curve(learning_curve,label=r'Model {} using policy {}'.format(backup,policy))
-    Plot.save('ablation.png')
-
+    for i in range(0,len(parameters)):        
+        exp_pickle_name = str(pickle_name) + "_" + str(i) 
+        exp_input = str(input) + str(parameters[i]) + " --write " + str(exp_pickle_name)
+        out = subprocess.call(exp_input, shell=True)
+    
 if __name__ == '__main__':
     experiment()

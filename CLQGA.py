@@ -2,6 +2,7 @@ import random
 import time
 import argparse
 from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient, calculate_crowd_distance
+from experiments.Experiments import saveLoad
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -36,6 +37,14 @@ NR_OF_ISING_QUBITS = 4
 NR_OF_SHOTS = 1024
 IMPROVEMENT_CRITERIA = 0.02
 
+# For saving data to file
+OUTPUT_NAME = None
+
+def write_output_to_file(output):
+    global OUTPUT_NAME
+    saveLoad("save",OUTPUT_NAME, output)
+    return
+
 def read_arg_string_from_file(parameter_file):
     arg_file = open(parameter_file, 'r')
     arg_lines = arg_file.readlines()
@@ -55,8 +64,8 @@ def arg_string_to_dict(arg_string, dict):
         arg_dict[param] = value
     return arg_dict
 
-def assign_parameters(parameter_file, arg_string):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER
+def assign_parameters(parameter_file, arg_string, output_file):
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER, OUTPUT_NAME
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -94,6 +103,8 @@ def assign_parameters(parameter_file, arg_string):
                 RANDOM_SEED = int(arg_dict[argument])
         elif argument == "MODIFIED_UNIFORM_CROSSOVER":
             MODIFIED_UNIFORM_CROSSOVER = (arg_dict[argument]=="True")
+        if not output_file == None:
+            OUTPUT_NAME = output_file
     return
 
 
@@ -141,9 +152,9 @@ def combination(children_population, parent_population):
         chromosome_child_1 = ""
         
         if MODIFIED_UNIFORM_CROSSOVER:
+            swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
             for i in range(0,CHROMOSOME_LENGTH):
                 # modified uniform random, higher crowd distance results in less swapping
-                swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
                 if random.random() < swap_chance:
                     # If True swap gene
                     chromosome_child_0 += parents[1].chromosome[i]
@@ -194,16 +205,17 @@ def fitness(population, observable_h, observable_j):
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
 def main():
-    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA, SEED
-
+    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA, RANDOM_SEED, OUTPUT_NAME, ELITISM_RATE
     # initialise parameters of the observable (1d ising model)
     observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS, RANDOM_SEED)
-
     # initialisation of variables
     generation = 1
     found = False
     population = []
-
+    # For experimental data saving
+    start_total_run_time = time.perf_counter()
+    data_average_fitness = []
+    data_average_crowd_score = []
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
@@ -227,6 +239,9 @@ def main():
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
         if generation % 50 == 0:
+            data_average_fitness.append(sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2))
+            total_crowd_distances = [calculate_crowd_distance(population[:int(ELITISM_RATE*len(population))], population[i]) for i in range(0,len(population))]
+            data_average_crowd_score.append(sum(total_crowd_distances)/len(total_crowd_distances))
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
         
         # stopping criteria
@@ -242,11 +257,14 @@ def main():
     # # if wanted, uncomment to see the final gate
     global NR_OF_QUBITS, NR_OF_GATES
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
+    if not OUTPUT_NAME == None:
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score])
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--arguments', required=False, help="Input the parameters to use for the algorithm, either input the name of a textfile(\".txt\"!) located in the same textfolder as the algorithm OR input a \",\" string listing the parameters that you want changed, like \"param1=5,param2=3,...\"")
+    parser.add_argument('--write', required=False, help="Input name of file to pickle the experimental data to")
     args = parser.parse_args()
     parameter_file = "default_parameters.txt"
     if args.arguments:
@@ -257,5 +275,9 @@ if __name__ == '__main__':
             arg_string = args.arguments
     else: 
         arg_string = None
-    assign_parameters(parameter_file, arg_string)
+
+    if args.write:
+        assign_parameters(parameter_file, arg_string, args.write)
+    else:
+        assign_parameters(parameter_file, arg_string, None)
     main()
