@@ -12,113 +12,113 @@ import random
 
 def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     # first six bits of string define gate time, rest define which qubits to apply to
-    gate_string = gene[:6]
+    gate_string = gene[:5]
     # based on the qubit string a permutation of the qubits is made, which is
     # used in the gate(a single bit gate only takes the first, a two bit gate)
     # takes the first two etc.
-    qubit_string = gene[6:]
+    qubit_string = gene[5:]
     qubit_seed = int(qubit_string, 2)
     qubits = np.random.RandomState(seed=qubit_seed).permutation(nr_of_qubits)
 
     ## Single Qubit gates
-    if gate_string == "000000":
+    if gate_string == "00000":
         # Pauli-X
         circuit.x(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "000001":
+    if gate_string == "00001":
         # originally u1 gate
         circuit.p(Parameter(str(number_of_parameters)),qubit=qubits[0])
         number_of_parameters += 1
         return circuit, number_of_parameters
-    if gate_string == "000010":
+    if gate_string == "00010":
         # originally u2 gate
         circuit.u(math.pi/2,Parameter(str(number_of_parameters)),Parameter(str(number_of_parameters+1)),qubit=qubits[0])
         number_of_parameters += 2
         return circuit, number_of_parameters
-    if gate_string == "000011":
+    if gate_string == "00011":
         # originally u3 gate
         circuit.u(Parameter(str(number_of_parameters)),Parameter(str(number_of_parameters+1)),Parameter(str(number_of_parameters+2)),qubit=qubits[0])
         number_of_parameters += 3
         return circuit, number_of_parameters
-    if gate_string == "000100":
+    if gate_string == "00100":
         # Pauli-Y
         circuit.y(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "000101":
+    if gate_string == "00101":
         # Pauli-Z
         circuit.z(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "000110":
+    if gate_string == "00110":
         # Hadamard
         circuit.h(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "000111":
+    if gate_string == "00111":
         # S gate
         circuit.s(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "001000":
+    if gate_string == "01000":
         # S conjugate gate
         circuit.sdg(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "001001":
+    if gate_string == "01001":
         # T gate
         circuit.t(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "001010":
+    if gate_string == "01010":
         # T conjugate gate
         circuit.tdg(qubit=qubits[0])
         return circuit, number_of_parameters
-    if gate_string == "001011":
+    if gate_string == "01011":
         # rx gate
         circuit.rx(Parameter(str(number_of_parameters)),qubit=qubits[0])
         number_of_parameters += 1
         return circuit, number_of_parameters
-    if gate_string == "001100":
+    if gate_string == "01100":
         # ry gate
         circuit.ry(Parameter(str(number_of_parameters)),qubit=qubits[0])
         number_of_parameters += 1
         return circuit, number_of_parameters
-    if gate_string == "001101":
+    if gate_string == "01101":
         # rz gate
         circuit.rz(Parameter(str(number_of_parameters)),qubit=qubits[0])
         number_of_parameters += 1
         return circuit, number_of_parameters
     ## Multi Qubit gates
-    if gate_string == "100000":
+    if gate_string == "10000":
         # Controlled NOT gate
         circuit.cx(qubits[0],qubits[1])
         return circuit, number_of_parameters
-    if gate_string == "100001":
+    if gate_string == "10001":
         # Controlled Y gate
         circuit.cy(qubits[0],qubits[1])
         return circuit, number_of_parameters
-    if gate_string == "100011":
+    if gate_string == "10011":
         # Controlled Z gate
         circuit.cz(qubits[0],qubits[1])
         return circuit, number_of_parameters
-    if gate_string == "100100":
+    if gate_string == "10100":
         # Controlled H gate
         circuit.ch(qubits[0],qubits[1])
         return circuit, number_of_parameters
-    if gate_string == "100101":
+    if gate_string == "10101":
         # Controlled rotation Z gate
         circuit.crz(Parameter(str(number_of_parameters)),qubits[0],qubits[1])
         number_of_parameters += 1
         return circuit, number_of_parameters
-    if gate_string == "100110":
+    if gate_string == "10110":
         # Controlled phase rotation gate
         circuit.cp(Parameter(str(number_of_parameters)),qubits[0],qubits[1])
         number_of_parameters += 1
         return circuit, number_of_parameters
-    if gate_string == "100111":
+    if gate_string == "10111":
         # SWAP gate
         circuit.swap(qubits[0],qubits[1])
         return circuit, number_of_parameters
-    if gate_string == "101000":
+    if gate_string == "11000":
         # Toffoli gate
         circuit.ccx(qubits[0],qubits[1],qubits[2])
         return circuit, number_of_parameters
-    if gate_string == "101001":
+    if gate_string == "11001":
         # controlled swap gate
         circuit.cswap(qubits[0],qubits[1],qubits[2])
         return circuit, number_of_parameters
@@ -231,10 +231,10 @@ def energy_from_circuit(circuit, qubits, h, j, shots, backend_simulator):
 
 def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator, seed):
     '''
-    symmetric gradient of the parameterised quantum circuit with fixed epsilon
+    centered differencing of the parameterised quantum circuit with fixed epsilon
     '''
     #TODO: use the same epsilon as used by IC
-    epsilon = 10**-3
+    epsilon = 10**-5
     gradient = 0
     np.random.seed(seed)
     parameters = [np.random.random()* 2*math.pi for _ in range(parameter_length)]
@@ -244,12 +244,12 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
         temp_parameters = parameters
         # Alpha-component of the gradient
         temp_parameters[i] += epsilon/2
-        grad_param += energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots, backend_simulator)
+        grad_param += energy_from_circuit(circuit.bind_parameters(temp_parameters), qubits, h, j, shots, backend_simulator)
         temp_parameters[i] -= epsilon
-        grad_param -= energy_from_circuit(circuit.bind_parameters(parameters), qubits, h, j, shots, backend_simulator)
+        grad_param -= energy_from_circuit(circuit.bind_parameters(temp_parameters), qubits, h, j, shots, backend_simulator)
         grad_param /= epsilon
-        gradient += grad_param
-    return abs(gradient), circuit.bind_parameters(parameters)
+        gradient += grad_param**2
+    return gradient**0.5, circuit.bind_parameters(parameters)
 
 def calculate_crowd_distance(elitism_population, individual):
     match_percentage = []
