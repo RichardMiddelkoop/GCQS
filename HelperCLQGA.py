@@ -1,11 +1,10 @@
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit import QuantumRegister
-from qiskit import Aer
 from qiskit_ibm_provider import IBMProvider
 from qiskit import transpile
 from qiskit.providers.fake_provider import FakeProviderForBackendV2
-from qiskit.providers import aer
+from qiskit_aer import AerSimulator
 import numpy as np
 import math
 import random
@@ -163,7 +162,7 @@ def get_circuit_properties(circuit, backend):
     circuit_error = 0
     IBMbackend = find_backend(backend)
     if "fake" in IBMbackend.name:
-        IBMbackend = aer.AerSimulator.from_backend(IBMbackend)
+        IBMbackend = AerSimulator.from_backend(IBMbackend)
     for gate in circuit.data:
         if "c" in gate.operation.name:
             cx_bits = [int(gate.qubits[0]._index), int(gate.qubits[1]._index)]
@@ -223,9 +222,9 @@ def add_measurement(circuit, qubits):
 def energy_from_circuit(circuit, qubits, h, j, shots, backend_simulator):
     meas_circuit = add_measurement(circuit, qubits)
     try:
-        backend_sim = aer.AerSimulator.from_backend(backend_simulator)
+        backend_sim = AerSimulator.from_backend(backend_simulator)
     except:
-        backend_sim = Aer.get_backend('qasm_simulator')
+        backend_sim = AerSimulator()
     counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
     return compute_expected_energy(counts,h,j)
 

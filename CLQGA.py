@@ -2,7 +2,7 @@ import random
 import time
 import argparse
 from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient, calculate_crowd_distance
-from experiments.Experiments import saveLoad
+from Experiments import saveLoad
 
 ## parameters for the algorithm ##
 # number of individuals in each generation
@@ -116,6 +116,7 @@ class Individual(object):
     def __init__(self, chromosome):
         self.chromosome = chromosome 
         self.fitness = -1
+        self.error = -1
 
     @classmethod
     def create_gnome(self):
@@ -201,6 +202,8 @@ def fitness(population, observable_h, observable_j):
             CHIP_BACKEND = backend
         complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
         individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
+        # For experiments
+        individual.error = circuit_error
 
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
@@ -215,6 +218,7 @@ def main():
     # For experimental data saving
     start_total_run_time = time.perf_counter()
     data_average_fitness = []
+    data_average_error = []
     data_average_crowd_score = []
     # initial population
     for _ in range(POPULATION_SIZE):
@@ -223,6 +227,7 @@ def main():
     population = fitness(population, observable_h, observable_j)
     population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
     average_fitness = []
+    average_error = []
 
     while not found:
         start = time.perf_counter()
@@ -231,15 +236,17 @@ def main():
         population = mutation(new_population)
         population = fitness(population, observable_h, observable_j)
         average_fitness.append(population[0].fitness)
+        average_error.append(population[0].error)
         if len(average_fitness) > 40:
             average_fitness.pop(0)
-
+            average_error.pop(0)
         # print statements during processing
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
         if generation % 50 == 0:
             data_average_fitness.append(sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2))
+            data_average_error.append(sum(average_error[int(len(average_error)/2):])/int(len(average_error)/2))
             total_crowd_distances = [calculate_crowd_distance(population[:int(ELITISM_RATE*len(population))], population[i]) for i in range(0,len(population))]
             data_average_crowd_score.append(sum(total_crowd_distances)/len(total_crowd_distances))
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
@@ -258,7 +265,7 @@ def main():
     global NR_OF_QUBITS, NR_OF_GATES
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
     if not OUTPUT_NAME == None:
-        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score])
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error])
 
 
 if __name__ == '__main__':
