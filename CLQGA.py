@@ -19,7 +19,7 @@ ELITISM_RATE = 0.10
 NR_OF_GATES = 6
 # the encoding of the circuit takes 11 bits for each circuit layer
 # do not change unless the encoding of gates has changed!
-GATE_ENCODING_LENGTH = 6 
+GATE_ENCODING_LENGTH = 5
 # nr of qubits in the system
 QUBIT_SECTIONING_LENGTH = 5
 CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
