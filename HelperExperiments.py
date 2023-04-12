@@ -23,6 +23,14 @@ class LearningCurvePlot:
         else:
             self.ax.plot(y)
     
+    def add_point(self,x,y, label=None):
+        '''y: the point
+        label: string to appear as label in plot legend'''
+        
+        if label is not None:
+            self.ax.scatter(x, y,label=label)
+        else:
+            self.ax.scatter(x, y)
     def set_ylim(self,lower,upper):
         self.ax.set_ylim([lower,upper])
 
@@ -69,6 +77,11 @@ if __name__ == '__main__':
         experiment_duration = output[1]
         experiment_average_fitness_50_increment = output[2]
         experiment_average_crowd_score_50_increment = output[3]
-        graph.add_curve(smooth(experiment_average_fitness_50_increment, window=50),label='method {}'.format(i))
+        experiment_average_error_rate_50_increment = output[4]
+        add_choice = experiment_average_fitness_50_increment
+        if len(add_choice) == 1:
+            graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='method {}'.format(i))
+        else:
+            graph.add_curve(smooth(add_choice, window=2),label='method {}'.format(i))
 
     graph.save(name=(filename + ".png"))

@@ -167,7 +167,7 @@ def get_circuit_properties(circuit, backend):
         if "c" in gate.operation.name:
             cx_bits = [int(gate.qubits[0]._index), int(gate.qubits[1]._index)]
             circuit_error += IBMbackend.properties().gate_error(gate.operation.name,cx_bits)
-            complexity += 2
+            complexity += 0.02
     # If a simulator is used the manual complexity value is used, otherwise the actual 2-bit circuit error is used
     if not circuit_error == 0:
         complexity = 0
