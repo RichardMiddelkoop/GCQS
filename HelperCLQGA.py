@@ -233,6 +233,8 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
     centered differencing of the parameterised quantum circuit with fixed epsilon
     '''
     #TODO: use the same epsilon as used by IC
+    if parameter_length == 0:
+        return 0, circuit
     epsilon = 10**-5
     gradient = 0
     np.random.seed(seed)
@@ -248,7 +250,7 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
         grad_param -= energy_from_circuit(circuit.bind_parameters(temp_parameters), qubits, h, j, shots, backend_simulator)
         grad_param /= epsilon
         gradient += grad_param**2
-    return gradient**0.5, circuit.bind_parameters(parameters)
+    return (gradient**0.5)/len(parameters), circuit.bind_parameters(parameters)
 
 def calculate_crowd_distance(elitism_population, individual):
     match_percentage = []
