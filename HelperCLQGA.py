@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit import QuantumRegister

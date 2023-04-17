@@ -9,3 +9,8 @@ Genetically computing quantum systems
 ## import random
 ## import sympy
 ## import time
+## import math
+## import subprocess
+## import pickle
+## import matplotlib.pyplot
+## import argparse

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import random
 import time
 import argparse
@@ -65,7 +68,7 @@ def arg_string_to_dict(arg_string, dict):
     return arg_dict
 
 def assign_parameters(parameter_file, arg_string, output_file):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER, OUTPUT_NAME
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER, OUTPUT_NAME, NR_OF_GATES
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -82,8 +85,8 @@ def assign_parameters(parameter_file, arg_string, output_file):
             ELITISM_RATE = float(arg_dict[argument])
         elif argument == "IMPROVEMENT_CRITERIA":
             IMPROVEMENT_CRITERIA = float(arg_dict[argument])
-        elif argument == "GATE_ENCODING_LENGTH":
-            GATE_ENCODING_LENGTH = int(arg_dict[argument])
+        elif argument == "NR_OF_GATES":
+            NR_OF_GATES = int(arg_dict[argument])
             CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGTH)
         elif argument == "QUBIT_SECTIONING_LENGTH":
             QUBIT_SECTIONING_LENGTH = int(arg_dict[argument])
@@ -148,32 +151,36 @@ def combination(children_population, parent_population):
     elitism_population = children_population
     
     for _ in range( int((len(parent_population) - len(children_population))/2)):
-        parents = random.sample(parent_population, 2)
-        chromosome_child_0 = ""
-        chromosome_child_1 = ""
+        # parents = random.sample(parent_population, 2)
+        # chromosome_child_0 = ""
+        # chromosome_child_1 = ""
         
-        if MODIFIED_UNIFORM_CROSSOVER:
-            swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
-            for i in range(0,CHROMOSOME_LENGTH):
-                # modified uniform random, higher crowd distance results in less swapping
-                if random.random() < swap_chance:
-                    # If True swap gene
-                    chromosome_child_0 += parents[1].chromosome[i]
-                    chromosome_child_1 += parents[0].chromosome[i]
-                else:
-                    chromosome_child_0 += parents[0].chromosome[i]
-                    chromosome_child_1 += parents[1].chromosome[i]
-        else:
-            for i in range(0,CHROMOSOME_LENGTH):
-                if random.randint(0,1):
-                    # If True swap gene
-                    chromosome_child_0 += parents[1].chromosome[i]
-                    chromosome_child_1 += parents[0].chromosome[i]
-                else:
-                    chromosome_child_0 += parents[0].chromosome[i]
-                    chromosome_child_1 += parents[1].chromosome[i]
-        children_population.append(Individual(chromosome_child_0))
-        children_population.append(Individual(chromosome_child_1))
+        # if MODIFIED_UNIFORM_CROSSOVER:
+        #     swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
+        #     for i in range(0,CHROMOSOME_LENGTH):
+        #         # modified uniform random, higher crowd distance results in less swapping
+        #         if random.random() < swap_chance:
+        #             # If True swap gene
+        #             chromosome_child_0 += parents[1].chromosome[i]
+        #             chromosome_child_1 += parents[0].chromosome[i]
+        #         else:
+        #             chromosome_child_0 += parents[0].chromosome[i]
+        #             chromosome_child_1 += parents[1].chromosome[i]
+        # else:
+        #     for i in range(0,CHROMOSOME_LENGTH):
+        #         if random.randint(0,1):
+        #             # If True swap gene
+        #             chromosome_child_0 += parents[1].chromosome[i]
+        #             chromosome_child_1 += parents[0].chromosome[i]
+        #         else:
+        #             chromosome_child_0 += parents[0].chromosome[i]
+        #             chromosome_child_1 += parents[1].chromosome[i]
+        # children_population.append(Individual(chromosome_child_0))
+        # children_population.append(Individual(chromosome_child_1))
+
+        # FOR RANDOM BENCHMARKING ONLY!!
+        children_population.append(Individual(Individual.create_gnome()))
+        children_population.append(Individual(Individual.create_gnome()))
 
     return children_population
 
