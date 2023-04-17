@@ -87,10 +87,10 @@ if __name__ == '__main__':
         experiment_average_fitness_50_increment = output[2]
         experiment_average_crowd_score_50_increment = output[3]
         experiment_average_error_rate_50_increment = output[4]
-        add_choice = experiment_average_crowd_score_50_increment
+        add_choice = experiment_average_fitness_50_increment
         if len(add_choice) == 1:
             graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='method {}'.format(i))
         else:
-            graph.add_curve(smooth(add_choice, window=10),label='method {}'.format(i))
+            graph.add_curve(smooth(add_choice, window=2),label='method {}'.format(i))
 
     graph.save(name=(filename + ".png"))
