@@ -151,36 +151,36 @@ def combination(children_population, parent_population):
     elitism_population = children_population
     
     for _ in range( int((len(parent_population) - len(children_population))/2)):
-        # parents = random.sample(parent_population, 2)
-        # chromosome_child_0 = ""
-        # chromosome_child_1 = ""
+        parents = random.sample(parent_population, 2)
+        chromosome_child_0 = ""
+        chromosome_child_1 = ""
         
-        # if MODIFIED_UNIFORM_CROSSOVER:
-        #     swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
-        #     for i in range(0,CHROMOSOME_LENGTH):
-        #         # modified uniform random, higher crowd distance results in less swapping
-        #         if random.random() < swap_chance:
-        #             # If True swap gene
-        #             chromosome_child_0 += parents[1].chromosome[i]
-        #             chromosome_child_1 += parents[0].chromosome[i]
-        #         else:
-        #             chromosome_child_0 += parents[0].chromosome[i]
-        #             chromosome_child_1 += parents[1].chromosome[i]
-        # else:
-        #     for i in range(0,CHROMOSOME_LENGTH):
-        #         if random.randint(0,1):
-        #             # If True swap gene
-        #             chromosome_child_0 += parents[1].chromosome[i]
-        #             chromosome_child_1 += parents[0].chromosome[i]
-        #         else:
-        #             chromosome_child_0 += parents[0].chromosome[i]
-        #             chromosome_child_1 += parents[1].chromosome[i]
-        # children_population.append(Individual(chromosome_child_0))
-        # children_population.append(Individual(chromosome_child_1))
+        if MODIFIED_UNIFORM_CROSSOVER:
+            swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
+            for i in range(0,CHROMOSOME_LENGTH):
+                # modified uniform random, higher crowd distance results in less swapping
+                if random.random() < swap_chance:
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        else:
+            for i in range(0,CHROMOSOME_LENGTH):
+                if random.randint(0,1):
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        children_population.append(Individual(chromosome_child_0))
+        children_population.append(Individual(chromosome_child_1))
 
         # FOR RANDOM BENCHMARKING ONLY!!
-        children_population.append(Individual(Individual.create_gnome()))
-        children_population.append(Individual(Individual.create_gnome()))
+        # children_population.append(Individual(Individual.create_gnome()))
+        # children_population.append(Individual(Individual.create_gnome()))
 
     return children_population
 

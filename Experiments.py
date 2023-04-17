@@ -23,9 +23,10 @@ def saveLoad(opt,pickleName, object):
 def experiment():
     ####### Settings
     # Experiment    
-    parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10"]
+    # parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10"]
+    parameters= ["MODIFIED_UNIFORM_CROSSOVER=True,MUTATION_RATE=0.01","MODIFIED_UNIFORM_CROSSOVER=True,MUTATION_RATE=0.05","MODIFIED_UNIFORM_CROSSOVER=False,MUTATION_RATE=0.01","MODIFIED_UNIFORM_CROSSOVER=False,MUTATION_RATE=0.05"]
     input = "python3 ./CLQGA.py --arguments "
-    pickle_name = "experiment_15_april_benchmarking"
+    pickle_name = "experiment_17_april_testing"
     ####### Experiments
     for i in range(0,len(parameters)):        
         exp_pickle_name = str(pickle_name) + "_" + str(i) 
