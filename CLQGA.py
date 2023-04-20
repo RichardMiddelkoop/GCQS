@@ -72,8 +72,9 @@ def assign_parameters(parameter_file, arg_string, output_file):
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
-    else:
+    if not(arg_string == None):
         arg_dict = arg_string_to_dict(arg_string, arg_dict)
+    
     for argument in arg_dict:
         if argument == "POPULATION_SIZE":
             POPULATION_SIZE = int(arg_dict[argument])

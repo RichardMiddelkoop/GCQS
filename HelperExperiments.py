@@ -21,7 +21,7 @@ class LearningCurvePlot:
         label: string to appear as label in plot legend '''
         if label is not None:
             x = np.arange(len(y))
-            self.ax.plot(x*50,y,label=label)
+            self.ax.plot(x*50+50,y,label=label)
         else:
             self.ax.plot(y)
     
@@ -80,8 +80,10 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    for i in outputs:
-        output = saveLoad("load",i, None)
+    outputLabels = ["benchmark", "QGA with MUC", "UC + MUTATION_RATE = 0.01", "UC + MUTATION_RATE = 0.05"]
+    # outputLabels = outputs
+    for i,out in enumerate(outputs):
+        output = saveLoad("load",out, None)
         experiment_population = output[0]
         experiment_duration = output[1]
         experiment_average_fitness_50_increment = output[2]
@@ -89,8 +91,8 @@ if __name__ == '__main__':
         experiment_average_error_rate_50_increment = output[4]
         add_choice = experiment_average_fitness_50_increment
         if len(add_choice) == 1:
-            graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='method {}'.format(i))
+            graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='{}'.format(outputLabels[i]))
         else:
-            graph.add_curve(smooth(add_choice, window=2),label='method {}'.format(i))
+            graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
 
     graph.save(name=(filename + ".png"))
