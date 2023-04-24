@@ -80,7 +80,7 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    outputLabels = ["benchmark", "QGA with MUC", "UC + MUTATION_RATE = 0.01", "UC + MUTATION_RATE = 0.05"]
+    outputLabels = ["benchmark 4 qubits", "benchmark 6 qubits", "UC + MUTATION_RATE = 0.01", "UC + MUTATION_RATE = 0.05"]
     # outputLabels = outputs
     for i,out in enumerate(outputs):
         output = saveLoad("load",out, None)
@@ -94,5 +94,4 @@ if __name__ == '__main__':
             graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='{}'.format(outputLabels[i]))
         else:
             graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
-
     graph.save(name=(filename + ".png"))
