@@ -80,7 +80,7 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    outputLabels = ["benchmark 4 qubits", "benchmark 6 qubits", "UC + MUTATION_RATE = 0.01", "UC + MUTATION_RATE = 0.05"]
+    outputLabels = ["benchmark 10 qubits", "QGA with MUC", "benchmark 8 qubits", "mucBoost 4 qubits", "mucBoost 6 qubits", "mucBoost 8 qubits", "mucBoost 10 qubits"]
     # outputLabels = outputs
     for i,out in enumerate(outputs):
         output = saveLoad("load",out, None)
