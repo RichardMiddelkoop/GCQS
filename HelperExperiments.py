@@ -41,7 +41,7 @@ class LearningCurvePlot:
 
     def save(self,name='test.png'):
         ''' name: string for filename of saved figure '''
-        self.ax.legend()
+        self.ax.legend(loc='lower left')
         self.fig.savefig(name,dpi=300)
 
 def smooth(y, window, poly=1):
@@ -63,6 +63,7 @@ if __name__ == '__main__':
         outputs = []
         for filename in filenames:
             if "experiment" in filename: outputs.append(filename)
+        outputs.sort()
     else:
         outputs = (args.input).split(",")
     
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    outputLabels = ["benchmark 10 qubits", "QGA with MUC", "benchmark 8 qubits", "mucBoost 4 qubits", "mucBoost 6 qubits", "mucBoost 8 qubits", "mucBoost 10 qubits"]
+    outputLabels = ["benchmark 4 qubits", "benchmark 6 qubits", "benchmark 8 qubits", "benchmark 10 qubits", "QGA with MUC 4 qubits", "QGA with MUC 6 qubits", "QGA with MUC 8 qubits", "QGA with MUC 10 qubits"]
     # outputLabels = outputs
     for i,out in enumerate(outputs):
         output = saveLoad("load",out, None)
