@@ -149,39 +149,39 @@ def combination(children_population, parent_population):
     perform mating and produce new offspring
     '''
     global CHROMOSOME_LENGTH, MODIFIED_UNIFORM_CROSSOVER
-    # elitism_population = children_population
+    elitism_population = children_population
     
     for _ in range( int((len(parent_population) - len(children_population))/2)):
-    #     parents = random.sample(parent_population, 2)
-    #     chromosome_child_0 = ""
-    #     chromosome_child_1 = ""
+        parents = random.sample(parent_population, 2)
+        chromosome_child_0 = ""
+        chromosome_child_1 = ""
         
-    #     if MODIFIED_UNIFORM_CROSSOVER:
-    #         swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
-    #         for i in range(0,CHROMOSOME_LENGTH):
-    #             # modified uniform random, higher crowd distance results in less swapping
-    #             if random.random() < swap_chance:
-    #                 # If True swap gene
-    #                 chromosome_child_0 += parents[1].chromosome[i]
-    #                 chromosome_child_1 += parents[0].chromosome[i]
-    #             else:
-    #                 chromosome_child_0 += parents[0].chromosome[i]
-    #                 chromosome_child_1 += parents[1].chromosome[i]
-    #     else:
-    #         for i in range(0,CHROMOSOME_LENGTH):
-    #             if random.randint(0,1):
-    #                 # If True swap gene
-    #                 chromosome_child_0 += parents[1].chromosome[i]
-    #                 chromosome_child_1 += parents[0].chromosome[i]
-    #             else:
-    #                 chromosome_child_0 += parents[0].chromosome[i]
-    #                 chromosome_child_1 += parents[1].chromosome[i]
-    #     children_population.append(Individual(chromosome_child_0))
-    #     children_population.append(Individual(chromosome_child_1))
+        if MODIFIED_UNIFORM_CROSSOVER:
+            swap_chance = (calculate_crowd_distance(elitism_population, parents[0]) + calculate_crowd_distance(elitism_population, parents[1]))/2
+            for i in range(0,CHROMOSOME_LENGTH):
+                # modified uniform random, higher crowd distance results in less swapping
+                if random.random() < swap_chance:
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        else:
+            for i in range(0,CHROMOSOME_LENGTH):
+                if random.randint(0,1):
+                    # If True swap gene
+                    chromosome_child_0 += parents[1].chromosome[i]
+                    chromosome_child_1 += parents[0].chromosome[i]
+                else:
+                    chromosome_child_0 += parents[0].chromosome[i]
+                    chromosome_child_1 += parents[1].chromosome[i]
+        children_population.append(Individual(chromosome_child_0))
+        children_population.append(Individual(chromosome_child_1))
 
         # FOR RANDOM BENCHMARKING ONLY!!
-        children_population.append(Individual(Individual.create_gnome()))
-        children_population.append(Individual(Individual.create_gnome()))
+        # children_population.append(Individual(Individual.create_gnome()))
+        # children_population.append(Individual(Individual.create_gnome()))
 
     return children_population
 
@@ -216,7 +216,7 @@ def fitness(population, observable_h, observable_j):
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
 def main():
-    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA, RANDOM_SEED, OUTPUT_NAME, ELITISM_RATE
+    global POPULATION_SIZE, MAX_GENERATIONS, NR_OF_ISING_QUBITS, IMPROVEMENT_CRITERIA, RANDOM_SEED, OUTPUT_NAME, ELITISM_RATE, CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES
     # initialise parameters of the observable (1d ising model)
     observable_h, observable_j = ising_1d_instance(NR_OF_ISING_QUBITS, RANDOM_SEED)
     # initialisation of variables
@@ -228,6 +228,8 @@ def main():
     data_average_fitness = []
     data_average_error = []
     data_average_crowd_score = []
+    data_best_individual = []
+    data_best_family = []
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
@@ -236,7 +238,12 @@ def main():
     population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
     average_fitness = []
     average_error = []
-
+    # first generation so its always the best individual and best family
+    # for the individual the structure is [fitness, error, chromosome, current generation, configured circuit]
+    # for the family the structure is [average elitism fitness, average elitism error, generation, family set of chromosomes]
+    data_best_individual.append([population[0].fitness,population[0].error,population[0].chromosome,generation-1,genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0],configure_circuit_to_backend(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0], CHIP_BACKEND)])
+    family_pool = selection(population)
+    data_best_family.append([sum([i.fitness for i in family_pool])/len(family_pool),sum([i.error for i in family_pool])/len(family_pool),generation-1,[i.chromosome for i in family_pool]])
     while not found:
         start = time.perf_counter()
         new_population = selection(population)
@@ -259,6 +266,12 @@ def main():
             data_average_crowd_score.append(sum(total_crowd_distances)/len(total_crowd_distances))
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
         
+        if population[0].fitness > data_best_individual[-1][0]:
+            data_best_individual.append([population[0].fitness,population[0].error,population[0].chromosome,generation,genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0],configure_circuit_to_backend(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0], CHIP_BACKEND)])
+        family_pool = selection(population)
+        if sum([i.fitness for i in family_pool])/len(family_pool) > data_best_family[-1][0]:
+            data_best_family.append([sum([i.fitness for i in family_pool])/len(family_pool),sum([i.error for i in family_pool])/len(family_pool),generation,[i.chromosome for i in family_pool]])
+        
         # stopping criteria
         if generation == MAX_GENERATIONS: 
             print("max gen reached!!")
@@ -270,10 +283,9 @@ def main():
         generation += 1
     
     # # if wanted, uncomment to see the final gate
-    global NR_OF_QUBITS, NR_OF_GATES
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
     if not OUTPUT_NAME == None:
-        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error])
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family])
 
 
 if __name__ == '__main__':

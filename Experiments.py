@@ -23,12 +23,12 @@ def saveLoad(opt,pickleName, object):
 def experiment():
     ####### Settings
     # Experiment    
-    parameters = ["NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10"]
+    parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6,NR_OF_GATES=30","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8,NR_OF_GATES=40","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10,NR_OF_GATES=50"]
     input = "python3 ./CLQGA.py --arguments "
-    pickle_name = "experiment_15_april_benchmarking"
+    pickle_name = "experiment_28_april_gateScaling_test"
     ####### Experiments
     for i in range(0,len(parameters)):        
-        exp_pickle_name = str(pickle_name) + "_" + str(i+1) 
+        exp_pickle_name = str(pickle_name) + "_" + str(i) 
         exp_input = str(input) + str(parameters[i]) + " --write " + str(exp_pickle_name)
         out = subprocess.call(exp_input, shell=True)
     
