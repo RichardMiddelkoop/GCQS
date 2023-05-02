@@ -120,7 +120,9 @@ class Individual(object):
     def __init__(self, chromosome):
         self.chromosome = chromosome 
         self.fitness = -1
+        # Only for experimental insight
         self.error = -1
+        self.ops = -1
 
     @classmethod
     def create_gnome(self):
@@ -212,6 +214,7 @@ def fitness(population, observable_h, observable_j):
         individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
         # For experiments
         individual.error = circuit_error
+        individual.ops = configured_circuit.count_ops()
 
     return sorted(population, key=lambda individual: individual.fitness, reverse=True)
 
@@ -230,6 +233,7 @@ def main():
     data_average_crowd_score = []
     data_best_individual = []
     data_best_family = []
+    data_circuit_evolution = []
     # initial population
     for _ in range(POPULATION_SIZE):
         gnome = Individual.create_gnome()
@@ -265,10 +269,10 @@ def main():
             total_crowd_distances = [calculate_crowd_distance(population[:int(ELITISM_RATE*len(population))], population[i]) for i in range(0,len(population))]
             data_average_crowd_score.append(sum(total_crowd_distances)/len(total_crowd_distances))
             print("Generation: {}\nCircuit: \n{}\nFitness: {}".format(generation,population[0].chromosome,sum(average_fitness[int(len(average_fitness)/2):])/int(len(average_fitness)/2)))
-        
         if population[0].fitness > data_best_individual[-1][0]:
             data_best_individual.append([population[0].fitness,population[0].error,population[0].chromosome,generation,genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0],configure_circuit_to_backend(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0], CHIP_BACKEND)])
         family_pool = selection(population)
+        data_circuit_evolution.append([[sum(population[0].ops.values()),sum([population[0].ops[i] for i in population[0].ops.keys() if 'c' in i])],[sum([sum(x.ops.values()) for x in family_pool])/len(family_pool),sum([sum([x.ops[i] for i in x.ops.keys() if 'c' in i]) for x in family_pool])/len(family_pool)]])
         if sum([i.fitness for i in family_pool])/len(family_pool) > data_best_family[-1][0]:
             data_best_family.append([sum([i.fitness for i in family_pool])/len(family_pool),sum([i.error for i in family_pool])/len(family_pool),generation,[i.chromosome for i in family_pool]])
         
@@ -285,7 +289,7 @@ def main():
     # # if wanted, uncomment to see the final gate
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
     if not OUTPUT_NAME == None:
-        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family])
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family, data_circuit_evolution])
 
 
 if __name__ == '__main__':

@@ -1,6 +1,8 @@
 # GCQS
 Genetically computing quantum systems
 
+# Required installs
+## pylatexenc
 
 # Used imports
 ## import cirq
