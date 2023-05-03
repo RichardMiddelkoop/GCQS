@@ -21,7 +21,7 @@ class LearningCurvePlot:
         label: string to appear as label in plot legend '''
         if label is not None:
             x = np.arange(len(y))
-            self.ax.plot(x*50+50,y,label=label)
+            self.ax.plot(x,y,label=label)
         else:
             self.ax.plot(y)
     
@@ -41,8 +41,8 @@ class LearningCurvePlot:
 
     def save(self,name='test.png'):
         ''' name: string for filename of saved figure '''
-        self.ax.legend(loc='lower left')
-        self.fig.savefig(name,dpi=300)
+        self.ax.legend(loc='upper right', bbox_to_anchor=(1.55, 1))
+        self.fig.savefig(name,dpi=300, bbox_inches="tight")
 
 def smooth(y, window, poly=1):
     '''
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    outputLabels = ["benchmark 4 qubits", "benchmark 6 qubits", "benchmark 8 qubits", "benchmark 10 qubits", "QGA with MUC 4 qubits", "QGA with MUC 6 qubits", "QGA with MUC 8 qubits", "QGA with MUC 10 qubits"]
+    outputLabels = ["4 qubits", "6 qubits", "8 qubits", "10 qubits", "QGA with MUC 4 qubits", "QGA with MUC 6 qubits", "QGA with MUC 8 qubits", "QGA with MUC 10 qubits"]
     # outputLabels = outputs
     for i,out in enumerate(outputs):
         output = saveLoad("load",out, None)
@@ -90,9 +90,16 @@ if __name__ == '__main__':
         experiment_average_fitness_50_increment = output[2]
         experiment_average_crowd_score_50_increment = output[3]
         experiment_average_error_rate_50_increment = output[4]
-        add_choice = experiment_average_fitness_50_increment
+        experiment_evolution_gates = [i[0][0] for i in output[7]]
+        experiment_evolution_controlled = [i[0][1] for i in output[7]]
+        experiment_evolution_family_gates = [i[1][0] for i in output[7]]
+        experiment_evolution_family_controlled = [i[1][1] for i in output[7]]
+        add_choice = experiment_evolution_gates
         if len(add_choice) == 1:
             graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='{}'.format(outputLabels[i]))
         else:
-            graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
+            # graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
+            graph.add_curve(smooth(experiment_evolution_controlled, window=15),label='{}'.format("best individual on " + str(outputLabels[i])))
+            graph.add_curve(smooth(experiment_evolution_family_controlled, window=15),label='{}'.format("average of family on " + str(outputLabels[i])))
+
     graph.save(name=(filename + ".png"))

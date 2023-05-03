@@ -25,7 +25,7 @@ def experiment():
     # Experiment    
     parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6,NR_OF_GATES=30","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8,NR_OF_GATES=40","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10,NR_OF_GATES=50"]
     input = "python3 ./CLQGA.py --arguments "
-    pickle_name = "experiment_2_may_gateScaling_evolution"
+    pickle_name = "experiment_3_may_gateScaling_evolution_2000"
     ####### Experiments
     for i in range(0,len(parameters)):        
         exp_pickle_name = str(pickle_name) + "_" + str(i) 
