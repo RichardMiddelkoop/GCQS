@@ -99,7 +99,7 @@ if __name__ == '__main__':
             graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='{}'.format(outputLabels[i]))
         else:
             # graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
-            graph.add_curve(smooth(experiment_evolution_controlled, window=15),label='{}'.format("best individual on " + str(outputLabels[i])))
-            graph.add_curve(smooth(experiment_evolution_family_controlled, window=15),label='{}'.format("average of family on " + str(outputLabels[i])))
+            graph.add_curve(smooth(experiment_evolution_gates, window=150),label='{}'.format("best individual on " + str(outputLabels[i])))
+            graph.add_curve(smooth(experiment_evolution_family_gates, window=150),label='{}'.format("average of family on " + str(outputLabels[i])))
 
     graph.save(name=(filename + ".png"))
