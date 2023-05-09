@@ -289,7 +289,7 @@ def main():
     # # if wanted, uncomment to see the final gate
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
     if not OUTPUT_NAME == None:
-        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family, data_circuit_evolution])
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family, data_circuit_evolution],[observable_h,observable_j])
 
 
 if __name__ == '__main__':
