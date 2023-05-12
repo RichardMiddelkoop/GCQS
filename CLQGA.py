@@ -3,6 +3,7 @@
 
 import random
 import time
+import math
 import argparse
 from HelperCLQGA import genome_to_circuit, configure_circuit_to_backend, get_circuit_properties, ising_1d_instance, compute_gradient, calculate_crowd_distance
 from Experiments import saveLoad
@@ -29,6 +30,8 @@ CHROMOSOME_LENGTH = NR_OF_GATES * (GATE_ENCODING_LENGTH + QUBIT_SECTIONING_LENGT
 # seed used for the randomiser
 RANDOM_SEED = None
 MODIFIED_UNIFORM_CROSSOVER = False
+PARAM_INITIALISATION_LOWER_BOUND = 0
+PARAM_INITIALISATION_UPPER_BOUND = 2*math.pi
 
 # the path to IBM chip
 CHIP_BACKEND = "ibm_perth"
@@ -68,7 +71,7 @@ def arg_string_to_dict(arg_string, dict):
     return arg_dict
 
 def assign_parameters(parameter_file, arg_string, output_file):
-    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER, OUTPUT_NAME, NR_OF_GATES
+    global POPULATION_SIZE, MAX_GENERATIONS, MUTATION_RATE, ELITISM_RATE, IMPROVEMENT_CRITERIA, GATE_ENCODING_LENGTH, QUBIT_SECTIONING_LENGTH, CHROMOSOME_LENGTH, CHIP_BACKEND, CHIP_BACKEND_SIMULATOR, NR_OF_QUBITS, NR_OF_ISING_QUBITS, NR_OF_SHOTS, RANDOM_SEED, MODIFIED_UNIFORM_CROSSOVER, OUTPUT_NAME, NR_OF_GATES, PARAM_INITIALISATION_LOWER_BOUND, PARAM_INITIALISATION_UPPER_BOUND
     arg_dict = {}
     if not(parameter_file == None):
         arg_dict = read_arg_string_from_file(parameter_file)
@@ -107,6 +110,10 @@ def assign_parameters(parameter_file, arg_string, output_file):
                 RANDOM_SEED = int(arg_dict[argument])
         elif argument == "MODIFIED_UNIFORM_CROSSOVER":
             MODIFIED_UNIFORM_CROSSOVER = (arg_dict[argument]=="True")
+        elif argument == "PARAM_INITIALISATION_LOWER_BOUND":
+            PARAM_INITIALISATION_LOWER_BOUND = float(arg_dict[argument])
+        elif argument == "PARAM_INITIALISATION_UPPER_BOUND":
+            PARAM_INITIALISATION_UPPER_BOUND = float(arg_dict[argument])
         if not output_file == None:
             OUTPUT_NAME = output_file
     return
@@ -137,9 +144,9 @@ def mutation(population):
     '''
     performs the mutation phase for a single generation phase, returns the mutated population
     '''
-    global MUTATION_RATE, CHROMOSOME_LENGTH, RANDOM_SEED
-    
-    for individual in population:
+    global MUTATION_RATE, CHROMOSOME_LENGTH, ELITISM_RATE
+    cut_off = int(ELITISM_RATE*len(population))
+    for individual in population[cut_off:]:
         for sliceIndex, _ in enumerate(individual.chromosome):
             if random.uniform(0.0,1.0) <= MUTATION_RATE:
                 individual.chromosome = individual.chromosome[0:sliceIndex] + str(random.randint(0,1)) + individual.chromosome[sliceIndex+1:CHROMOSOME_LENGTH]
@@ -202,11 +209,11 @@ def fitness(population, observable_h, observable_j):
     '''
     calculate fitness score
     '''
-    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED
+    global CHIP_BACKEND, NR_OF_QUBITS, NR_OF_GATES, NR_OF_ISING_QUBITS, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED, PARAM_INITIALISATION_LOWER_BOUND, PARAM_INITIALISATION_UPPER_BOUND
     for individual in population:
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        gradient, energy, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED)
+        gradient, energy, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED, PARAM_INITIALISATION_LOWER_BOUND, PARAM_INITIALISATION_UPPER_BOUND)
         
         configured_circuit, backend = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         if not type(backend) == str:
@@ -240,7 +247,6 @@ def main():
         gnome = Individual.create_gnome()
         population.append(Individual(gnome))
     population = fitness(population, observable_h, observable_j)
-    population = sorted(population, key=lambda individual: individual.fitness, reverse=True)
     average_fitness = []
     average_error = []
     # first generation so its always the best individual and best family

@@ -232,7 +232,7 @@ def energy_from_circuit(circuit, qubits, h, j, shots, backend_simulator):
     counts = backend_sim.run(transpile(meas_circuit, backend_sim), shots=shots).result().get_counts()
     return compute_expected_energy(counts,h,j)
 
-def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator, seed):
+def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_simulator, seed, lower_bound, upper_bound):
     '''
     centered differencing of the parameterised quantum circuit with fixed epsilon
     '''
@@ -242,7 +242,7 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
     epsilon = 10**-5
     gradient = 0
     np.random.seed(seed)
-    parameters = [np.random.random()* 2*math.pi for _ in range(parameter_length)]
+    parameters = [np.random.random()* (upper_bound-lower_bound)+lower_bound for _ in range(parameter_length)]
 
     def expectation_function(p):
         return energy_from_circuit(circuit.bind_parameters(p), qubits, h, j, shots, backend_simulator)
