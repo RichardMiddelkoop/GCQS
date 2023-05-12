@@ -11,6 +11,7 @@ from qiskit_aer import AerSimulator
 import numpy as np
 import math
 import random
+from scipy.optimize import minimize
 
 def gate_encoding(circuit, gene, nr_of_qubits, number_of_parameters):
     # first six bits of string define gate time, rest define which qubits to apply to
@@ -237,11 +238,16 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
     '''
     #TODO: use the same epsilon as used by IC
     if parameter_length == 0:
-        return 0, circuit
+        return 0, 0, circuit
     epsilon = 10**-5
     gradient = 0
     np.random.seed(seed)
     parameters = [np.random.random()* 2*math.pi for _ in range(parameter_length)]
+
+    def expectation_function(p):
+        return energy_from_circuit(circuit.bind_parameters(p), qubits, h, j, shots, backend_simulator)
+    
+    energy = minimize(expectation_function,parameters, method="COBYLA", tol=1e-4, options={'maxiter':100})
 
     for i,_ in enumerate(parameters):
         grad_param = 0
@@ -253,7 +259,7 @@ def compute_gradient(circuit, parameter_length, qubits, h, j, shots, backend_sim
         grad_param -= energy_from_circuit(circuit.bind_parameters(temp_parameters), qubits, h, j, shots, backend_simulator)
         grad_param /= epsilon
         gradient += grad_param**2
-    return (gradient**0.5)/len(parameters), circuit.bind_parameters(parameters)
+    return (gradient**0.5)/len(parameters), energy.fun, circuit.bind_parameters(parameters)
 
 def calculate_crowd_distance(elitism_population, individual):
     match_percentage = []

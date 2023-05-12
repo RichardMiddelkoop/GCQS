@@ -23,8 +23,8 @@ def saveLoad(opt,pickleName, object):
 def experiment():
     ####### Settings
     # Experiment    
-    parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6,NR_OF_GATES=30","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8,NR_OF_GATES=40","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10,NR_OF_GATES=50"]
-    parameters = parameters[0]
+    # parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20","NR_OF_QUBITS=6,NR_OF_ISING_QUBITS=6,NR_OF_GATES=30","NR_OF_QUBITS=8,NR_OF_ISING_QUBITS=8,NR_OF_GATES=40","NR_OF_QUBITS=10,NR_OF_ISING_QUBITS=10,NR_OF_GATES=50"]
+    parameters = ["NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20,MODIFIED_UNIFORM_CROSSOVER=False","NR_OF_QUBITS=4,NR_OF_ISING_QUBITS=4,NR_OF_GATES=20,MODIFIED_UNIFORM_CROSSOVER=True"]
     input = "python3 ./CLQGA.py --arguments "
     pickle_name = "experiment_10_may_no_muc"
     ####### Experiments

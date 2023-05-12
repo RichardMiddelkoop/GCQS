@@ -138,7 +138,7 @@ def mutation(population):
     performs the mutation phase for a single generation phase, returns the mutated population
     '''
     global MUTATION_RATE, CHROMOSOME_LENGTH, RANDOM_SEED
-    random.seed(RANDOM_SEED)
+    
     for individual in population:
         for sliceIndex, _ in enumerate(individual.chromosome):
             if random.uniform(0.0,1.0) <= MUTATION_RATE:
@@ -206,12 +206,13 @@ def fitness(population, observable_h, observable_j):
     for individual in population:
         genome = individual.chromosome
         circuit, nr_of_parameters = genome_to_circuit(genome, NR_OF_QUBITS, NR_OF_GATES)
-        gradient, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED)
+        gradient, energy, circuit = compute_gradient(circuit, nr_of_parameters, NR_OF_ISING_QUBITS, observable_h, observable_j, NR_OF_SHOTS, CHIP_BACKEND_SIMULATOR, RANDOM_SEED)
+        
         configured_circuit, backend = configure_circuit_to_backend(circuit, CHIP_BACKEND)
         if not type(backend) == str:
             CHIP_BACKEND = backend
         complexity, circuit_error = get_circuit_properties(configured_circuit, CHIP_BACKEND)
-        individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient
+        individual.fitness = 1/(1+complexity) * 1/(1+circuit_error) * gradient * -energy
         # For experiments
         individual.error = circuit_error
         individual.ops = configured_circuit.count_ops()
@@ -260,6 +261,7 @@ def main():
             average_fitness.pop(0)
             average_error.pop(0)
         # print statements during processing
+        print("generation {}: {}".format(generation, population[0].fitness))
         if generation == 1:
             # print expected runtime 
             print("Expected runtime: {}".format(time.strftime("%H:%M:%S", time.gmtime((time.perf_counter() - start)*MAX_GENERATIONS))))
@@ -289,7 +291,7 @@ def main():
     # # if wanted, uncomment to see the final gate
     print(genome_to_circuit(population[0].chromosome, NR_OF_QUBITS, NR_OF_GATES)[0])
     if not OUTPUT_NAME == None:
-        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family, data_circuit_evolution],[observable_h,observable_j])
+        write_output_to_file([population,time.gmtime((time.perf_counter() - start_total_run_time)),data_average_fitness, data_average_crowd_score, data_average_error, data_best_individual, data_best_family, data_circuit_evolution,[observable_h,observable_j]])
 
 
 if __name__ == '__main__':
