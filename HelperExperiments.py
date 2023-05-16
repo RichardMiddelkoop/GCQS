@@ -81,8 +81,8 @@ if __name__ == '__main__':
         y = args.y
 
     graph = LearningCurvePlot(xlabel=x,ylabel=y,title=filename)
-    outputLabels = ["4 qubits", "6 qubits", "8 qubits", "10 qubits", "QGA with MUC 4 qubits", "QGA with MUC 6 qubits", "QGA with MUC 8 qubits", "QGA with MUC 10 qubits"]
-    # outputLabels = outputs
+    # outputLabels = ["4 qubits", "6 qubits", "8 qubits", "10 qubits", "QGA with MUC 4 qubits", "QGA with MUC 6 qubits", "QGA with MUC 8 qubits", "QGA with MUC 10 qubits"]
+    outputLabels = outputs
     for i,out in enumerate(outputs):
         output = saveLoad("load",out, None)
         experiment_population = output[0]
@@ -94,12 +94,12 @@ if __name__ == '__main__':
         experiment_evolution_controlled = [i[0][1] for i in output[7]]
         experiment_evolution_family_gates = [i[1][0] for i in output[7]]
         experiment_evolution_family_controlled = [i[1][1] for i in output[7]]
-        add_choice = experiment_evolution_gates
+        add_choice = experiment_average_error_rate_50_increment
         if len(add_choice) == 1:
             graph.add_point(experiment_average_error_rate_50_increment,add_choice,label='{}'.format(outputLabels[i]))
         else:
-            # graph.add_curve(smooth(add_choice, window=15),label='{}'.format(outputLabels[i]))
-            graph.add_curve(smooth(experiment_evolution_gates, window=150),label='{}'.format("best individual on " + str(outputLabels[i])))
-            graph.add_curve(smooth(experiment_evolution_family_gates, window=150),label='{}'.format("average of family on " + str(outputLabels[i])))
+            graph.add_curve(smooth(add_choice, window=2),label='{}'.format(outputLabels[i]))
+            # graph.add_curve(smooth(experiment_evolution_gates, window=150),label='{}'.format("best individual on " + str(outputLabels[i])))
+            # graph.add_curve(smooth(experiment_evolution_family_gates, window=150),label='{}'.format("average of family on " + str(outputLabels[i])))
 
     graph.save(name=(filename + ".png"))
