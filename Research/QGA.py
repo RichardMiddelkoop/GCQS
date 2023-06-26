@@ -1,7 +1,7 @@
 # Quantum Genetic Algorithm
 import random
 import sympy
-from HelperQGA import create_instance, calculate_expected_value
+from Research.HelperQGA import create_instance, calculate_expected_value
 import time
 
 def generate_parameter_circuit(length=3):

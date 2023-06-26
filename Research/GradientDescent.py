@@ -1,6 +1,6 @@
 import sympy
 import random
-from HelperQGA import create_instance, calculate_expected_value
+from Research.HelperQGA import create_instance, calculate_expected_value
 
 def generate_parameter_circuit(length=3):
     alpha = sympy.Symbol('alpha')

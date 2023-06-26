@@ -263,7 +263,7 @@ def main():
         population = fitness(population, observable_h, observable_j)
         average_fitness.append(population[0].fitness)
         average_error.append(population[0].error)
-        if len(average_fitness) > 40:
+        if len(average_fitness) > 50:
             average_fitness.pop(0)
             average_error.pop(0)
         # print statements during processing
