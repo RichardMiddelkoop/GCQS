@@ -257,10 +257,14 @@ def main():
     data_best_family.append([sum([i.fitness for i in family_pool])/len(family_pool),sum([i.error for i in family_pool])/len(family_pool),generation-1,[i.chromosome for i in family_pool]])
     while not found:
         start = time.perf_counter()
+
+        # FUNCTIONAL SECTION OF THE ALGORITHM #
         new_population = selection(population)
         new_population = combination(new_population, population)
         population = mutation(new_population)
         population = fitness(population, observable_h, observable_j)
+
+        # LOGGING SECTION OF THE ALGORITHM #
         average_fitness.append(population[0].fitness)
         average_error.append(population[0].error)
         if len(average_fitness) > 50:
